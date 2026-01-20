@@ -141,8 +141,8 @@ main {
 }
 
 .hero {
-    background: linear-gradient(rgba(109, 76, 61, 0.8), rgba(109, 76, 61, 0.8)), url('https://source.unsplash.com/random/1600x900/?prayer,church') no-repeat center center/cover;
-    color: var(--card-bg);
+    background: var(--symbol-color);
+    color: var(--primary-color);
     text-align: center;
     margin-bottom: 30px;
     padding: 5vh 20px; /* Adiciona um padding vertical proporcional */
@@ -178,6 +178,11 @@ main {
 .btn:hover {
     background: var(--card-bg);
     color: var(--primary-color);
+}
+
+.hero .btn {
+    background: var(--primary-color);
+    color: var(--card-bg);
 }
 
 .about, .mission-vision {
@@ -525,6 +530,7 @@ footer p {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     text-align: center; /* Centraliza todo o conteúdo */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 2px solid var(--primary-color);
     display: flex;
     flex-direction: column;
     position: relative;
