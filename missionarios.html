@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missionários - Movimento Antioquia</title>
+    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+        </div>
+        <div class="brand-name">
+            <h1>MOVIMENTO</h1>
+            <p class="subtitle-script">Antioquia</p>
+        </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="relogio.html">Relógio de Oração</a>
+            <a href="missionarios.html" class="active">Missionários</a>
+            <a href="quadro-tito.html">Quadro Tito</a>
+            <!-- Adicione outros links conforme necessário -->
+        </nav>
+        <button class="hamburger-menu" aria-label="Abrir menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="about animate-on-scroll"> <!-- Reutilizando classe para o título centralizado -->
+                <h3>Nossos Missionários</h3>
+                <p>Conheça as famílias que estão espalhando a palavra nos campos missionários.</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="missionary-card animate-on-scroll"
+                     data-name="Arlã e Gabriela Sartori"
+                     data-img-src="imagens/missionarios/arla.png"
+                     data-long-desc="Arlã e Gabriela servem no Brasil, dedicando-se à plantação de novas igrejas e ao treinamento de líderes locais para a expansão do evangelho no país.">
+                    <div class="missionary-flag">
+                        <img src="https://flagcdn.com/br.svg" alt="Bandeira do Brasil">
+                    </div>
+                    <div class="missionary-img-wrapper">
+                        <img src="imagens/missionarios/arla.png" alt="Foto de Arlã e Gabriela Sartori">
+                    </div>
+                    <h4>Arlã e Gabriela Sartori</h4>
+                    <p>Servindo no Brasil, com foco na plantação de igrejas e treinamento de líderes.</p>
+                </div>
+
+                <div class="missionary-card animate-on-scroll"
+                     data-name="Rodrigo e Miriane Zarzeck"
+                     data-img-src="imagens/missionarios/rodrigo.png"
+                     data-long-desc="Com um chamado para o Brasil, Rodrigo e Miriane trabalham no fortalecimento de comunidades através de projetos sociais e evangelismo, buscando transformar realidades e levar esperança.">
+                    <div class="missionary-flag">
+                        <img src="https://flagcdn.com/br.svg" alt="Bandeira do Brasil">
+                    </div>
+                    <div class="missionary-img-wrapper">
+                        <img src="imagens/missionarios/rodrigo.png" alt="Foto de Rodrigo e Miriane Zarzeck">
+                    </div>
+                    <h4>Rodrigo e Miriane Zarzeck</h4>
+                    <p>Atuando no Brasil em projetos sociais e evangelismo para fortalecer comunidades.</p>
+                </div>
+
+                <div class="missionary-card animate-on-scroll"
+                     data-name="Jansen e Jessica Costa"
+                     data-img-src="imagens/missionarios/jansen.png"
+                     data-long-desc="No Japão, um campo missionário único e desafiador, Jansen e Jessica se dedicam a construir relacionamentos e compartilhar o evangelho de forma criativa, buscando alcançar o coração da cultura japonesa.">
+                    <div class="missionary-flag">
+                        <img src="https://flagcdn.com/jp.svg" alt="Bandeira do Japão">
+                    </div>
+                    <div class="missionary-img-wrapper">
+                        <img src="imagens/missionarios/jansen.png" alt="Foto de Jansen e Jessica Costa">
+                    </div>
+                    <h4>Jansen e Jessica Costa</h4>
+                    <p>Missionários no Japão, focados em evangelismo criativo e discipulado.</p>
+                </div>
+
+                <div class="missionary-card animate-on-scroll"
+                     data-name="Kleiton e Roselaine Clack"
+                     data-img-src="imagens/missionarios/kleiton.png"
+                     data-long-desc="Kleiton e Roselaine estão no Uruguai, onde apoiam a igreja local através de programas de discipulado, estudos bíblicos e ações de compaixão, visando o crescimento espiritual da comunidade.">
+                    <div class="missionary-flag">
+                        <img src="https://flagcdn.com/uy.svg" alt="Bandeira do Uruguai">
+                    </div>
+                    <div class="missionary-img-wrapper">
+                        <img src="imagens/missionarios/kleiton.png" alt="Foto de Kleiton e Roselaine Clack">
+                    </div>
+                    <h4>Kleiton e Roselaine Clack</h4>
+                    <p>Baseados no Uruguai, apoiando a igreja local com discipulado e ações sociais.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Detalhes do Missionário -->
+    <div id="missionary-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Fechar">&times;</button>
+            <div class="modal-body">
+                <div class="modal-image-container">
+                    <img id="modal-img" src="" alt="">
+                </div>
+                <div class="modal-text-container">
+                    <h3 id="modal-name"></h3>
+                    <p id="modal-description"></p>
+                    <a href="#" class="btn modal-contribute">Contribuir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; <span id="current-year"></span> Movimento Antioquia. Todos os direitos reservados.</p>
+            <p>Contato: ministeriomissoes.ibicco@hotmail.com</p>
+            <div class="footer-social">
+                <a href="https://www.instagram.com/movantioquia" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <span>@movantioquia</span>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
+    <script src="script.js"></script>
+</body>
+</html>

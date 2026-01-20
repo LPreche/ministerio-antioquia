@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relógio de Oração - Movimento Antioquia</title>
+    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="relogio-page">
+
+    <header>
+        <div class="logo-container">
+            <img src="imagens/logo.jpg" alt="Movimento Antioquia Logo" class="logo">
+            <div class="brand-name">
+                <h1>MOVIMENTO</h1>
+                <p class="subtitle-script">Antioquia</p>
+            </div>
+        </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="relogio.html" class="active">Relógio de Oração</a>
+            <a href="missionarios.html">Missionários</a>
+            <a href="quadro-tito.html">Quadro Tito</a>
+        </nav>
+        <button class="hamburger-menu" aria-label="Abrir menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <main>
+        <section class="prayer-requests-section">
+            <div class="container animate-on-scroll">
+                <h3>Motivos de Oração</h3>
+                <ul>
+                    <li>Pela liderança da igreja e suas famílias.</li>
+                    <li>Pelos missionários no campo e seus projetos.</li>
+                    <li>Pelo avivamento espiritual em nossa cidade e nação.</li>
+                    <li>Pelas famílias da nossa comunidade.</li>
+                </ul>
+            </div>
+        </section>
+
+        <div class="prayer-layout-grid container">
+            <aside class="prayer-name-list-wrapper animate-on-scroll">
+                <h4>Escala de Oração</h4>
+                <ul id="prayer-name-list"></ul>
+            </aside>
+            <div class="prayer-clock-wrapper animate-on-scroll">
+                <div class="prayer-clock-container">
+                    <div class="clock-face" id="clock-face">
+                        <div class="clock-hand" id="clock-hand"></div>
+                        <div class="clock-center">
+                            <div class="current-time" id="clock">00:00</div>
+                            <div id="current-prayer">Carregando...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
+    <script src="script.js"></script>
+
+    <footer>
+        <div class="container">
+            <p>&copy; <span id="current-year"></span> Movimento Antioquia. Todos os direitos reservados.</p>
+            <p>Contato: ministeriomissoes.ibicco@hotmail.com</p>
+            <div class="footer-social">
+                <a href="https://www.instagram.com/movantioquia" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <span>@movantioquia</span>
+                </a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
