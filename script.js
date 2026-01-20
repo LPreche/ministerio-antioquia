@@ -60,12 +60,15 @@ function setupMissionaryModal() {
     const modalName = document.getElementById('modal-name');
     const modalDescription = document.getElementById('modal-description');
     const body = document.body;
+    const modalButton = modal.querySelector('.modal-contribute');
 
     missionaryCards.forEach(card => {
         card.addEventListener('click', () => {
             const name = card.dataset.name;
             const imgSrc = card.dataset.imgSrc;
             const longDesc = card.dataset.longDesc;
+            const btnText = card.dataset.btnText;
+            const btnLink = card.dataset.btnLink;
 
             modalName.textContent = name;
             modalDescription.textContent = longDesc;
@@ -73,9 +76,23 @@ function setupMissionaryModal() {
 
             if (imgSrc) {
                 modalImg.src = imgSrc;
-                modalImg.style.display = 'block';
+                modalImg.parentElement.style.display = ''; // Garante que o container da imagem seja visível
             } else {
-                modalImg.style.display = 'none';
+                modalImg.parentElement.style.display = 'none'; // Esconde se não houver imagem
+            }
+
+            // Lida com o botão customizado
+            if (btnText && btnLink) {
+                modalButton.textContent = btnText;
+                modalButton.href = btnLink;
+                modalButton.target = '_blank';
+                modalButton.rel = 'noopener noreferrer';
+            } else {
+                // Reseta para o padrão para os outros missionários
+                modalButton.textContent = 'Contribuir';
+                modalButton.href = '#'; // Link de contribuição padrão
+                modalButton.removeAttribute('target');
+                modalButton.removeAttribute('rel');
             }
 
             modal.classList.add('is-visible');
@@ -90,7 +107,9 @@ function setupMissionaryModal() {
 
     modalCloseBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', e => e.target === modal && closeModal());
-    document.addEventListener('keydown', e => e.key === 'Escape' && closeModal());
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modal.classList.contains('is-visible')) closeModal();
+    });
 }
 
 function setupPrayerClock() {
@@ -218,6 +237,67 @@ function setupBackToTopButton() {
     });
 }
 
+function setupContactForm() {
+    const form = document.getElementById('contact-form');
+    const modal = document.getElementById('thank-you-modal');
+
+    if (!form || !modal) return; // Only run on contact page
+
+    const closeBtn = modal.querySelector('.modal-close');
+    const closeBtn2 = document.getElementById('close-thank-you-modal');
+    const body = document.body;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent normal submission
+
+        const formData = new FormData(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.textContent = 'Enviando...';
+        submitButton.disabled = true;
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                modal.classList.add('is-visible');
+                body.classList.add('modal-open');
+                form.reset(); // Limpa o formulário
+            } else {
+                response.json().then(data => {
+                    const errorMessage = data.errors ? data.errors.map(e => e.message).join(', ') : 'Ocorreu um erro. Tente novamente.';
+                    alert(`Erro ao enviar: ${errorMessage}`);
+                }).catch(() => {
+                    alert('Ocorreu um erro ao processar a resposta do servidor.');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Fetch Error:', error);
+            alert('Ocorreu um erro de rede. Verifique sua conexão e tente novamente.');
+        })
+        .finally(() => {
+            submitButton.textContent = originalButtonText;
+            submitButton.disabled = false;
+        });
+    });
+
+    function closeModal() {
+        modal.classList.remove('is-visible');
+        body.classList.remove('modal-open');
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    closeBtn2.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => e.target === modal && closeModal());
+    document.addEventListener('keydown', e => e.key === 'Escape' && modal.classList.contains('is-visible') && closeModal());
+}
+
 // --- Inicialização de todas as funções ---
 updateFooter();
 setupHamburgerMenu();
@@ -225,3 +305,4 @@ setupScrollAnimations();
 setupMissionaryModal();
 setupBackToTopButton();
 setupPrayerClock();
+setupContactForm();

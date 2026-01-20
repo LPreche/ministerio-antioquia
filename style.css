@@ -598,6 +598,62 @@ footer p {
     object-fit: cover;
 }
 
+.missionary-card--highlight .missionary-img-wrapper img {
+    object-fit: contain; /* Garante que o logo caiba inteiro, sem cortar */
+    background-color: white; /* Fundo branco para preencher o espaço */
+}
+
+/* Highlighted card for main organization */
+.missionary-card--highlight {
+    grid-column: 1 / -1; /* Span full width on grid */
+    background: var(--primary-color);
+    border-width: 3px;
+    border-color: var(--symbol-color);
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 30px;
+    padding: 30px;
+}
+
+.missionary-card--highlight .missionary-img-wrapper {
+    margin: 0;
+    border-color: var(--symbol-color);
+    width: 120px;
+    height: 120px;
+    border-radius: 8px; /* Deixa o wrapper quadrado com cantos arredondados */
+}
+
+.missionary-card--highlight .missionary-text-content {
+    flex: 1;
+}
+
+.missionary-card--highlight h4 {
+    color: var(--card-bg); /* White title */
+    font-size: 1.8rem;
+}
+
+.missionary-card--highlight p {
+    color: var(--secondary-color); /* Gray text */
+    flex-grow: 0;
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .missionary-card--highlight {
+        flex-direction: column;
+        text-align: center;
+    }
+    .missionary-card--highlight .missionary-img-wrapper {
+        margin: 0 auto 20px;
+        width: 140px;
+        height: 140px;
+    }
+    .missionary-card--highlight .missionary-text-content {
+        width: 100%;
+    }
+}
+
 /* Modal Styles */
 body.modal-open {
     overflow: hidden;
@@ -714,6 +770,12 @@ body.modal-open {
     color: var(--primary-color);
 }
 
+.modal-body.centered-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
 @media (max-width: 600px) {
     .modal-content {
         padding: 25px;
@@ -819,6 +881,68 @@ body.modal-open {
     }
 }
 
+/* --- Estilos para a Página de Contato --- */
+
+.contact-form-container {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    max-width: 700px;
+    margin: 20px auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: var(--font-main);
+    font-size: 1rem;
+    box-sizing: border-box; /* Garante que o padding não aumente a largura */
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(62, 38, 14, 0.2);
+}
+
+/* Botão Flutuante do WhatsApp */
+.whatsapp-fab {
+    position: fixed;
+    bottom: 25px;
+    left: 25px; /* Posição à esquerda */
+    background-color: #25D366; /* Cor oficial do WhatsApp */
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 998; /* Abaixo do back-to-top */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+}
+
+.whatsapp-fab:hover {
+    transform: scale(1.1);
+}
 
 /* Back to Top Button */
 .back-to-top {
@@ -852,4 +976,13 @@ body.modal-open {
 
 .back-to-top:hover {
     background-color: var(--symbol-color);
+}
+
+@media (max-width: 600px) {
+    .whatsapp-fab {
+        bottom: 95px; /* Sobe o botão do WhatsApp para não sobrepor o footer */
+        left: 20px;
+        width: 55px;
+        height: 55px;
+    }
 }
