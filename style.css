@@ -10,6 +10,10 @@
     --symbol-color: #B08C68; /* Cor do símbolo na logo */
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: var(--font-main);
     background-color: var(--bg-color);
@@ -61,6 +65,9 @@ h1 {
     font-weight: 500;
     line-height: 1;
     text-transform: none; /* Remove o uppercase para a fonte script */
+    /* Animação */
+    opacity: 0;
+    animation: fadeInDown 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s forwards;
 }
 
 p.subtitle-script {
@@ -69,6 +76,32 @@ p.subtitle-script {
     font-style: italic;
     font-size: 1.4rem;
     color: var(--symbol-color); /* Altera a cor para a do símbolo */
+    /* Animação */
+    opacity: 0; /* Começa invisível para a animação */
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
+}
+
+/* --- Animações do Cabeçalho --- */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 nav {
@@ -94,6 +127,17 @@ nav a:hover, nav a.active {
     color: var(--card-bg);
 }
 
+.nav-donate-btn {
+    background-color: var(--symbol-color);
+    color: var(--primary-color) !important;
+    font-weight: bold;
+}
+
+.nav-donate-btn:hover {
+    background-color: var(--card-bg) !important;
+    color: var(--primary-color) !important;
+}
+
 .hamburger-menu {
     display: none; /* Escondido em telas maiores */
     background: none;
@@ -117,7 +161,7 @@ body.nav-open .hamburger-menu span:nth-child(2) { opacity: 0; }
 body.nav-open .hamburger-menu span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
 
 main {
-    padding-bottom: 40px;
+    padding-bottom: 0; /* Removido para colar a última seção ao rodapé */
     flex-grow: 1; /* Faz o conteúdo principal crescer para empurrar o rodapé para baixo */
 }
 
@@ -253,6 +297,7 @@ footer {
     color: var(--card-bg);
     text-align: center;
     padding: 20px 0;
+    border-top: 2px solid var(--symbol-color); /* Linha separadora */
 }
 
 footer p {
@@ -263,6 +308,11 @@ footer p {
 
 .footer-social {
     margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 25px; /* Espaçamento entre os links */
 }
 
 .footer-social a {
@@ -728,12 +778,15 @@ body.modal-open {
     background-size: 50%;
     background-position: center;
     background-repeat: no-repeat;
+    border: 4px solid var(--symbol-color);
+    box-sizing: border-box;
 }
 
 .modal-image-container img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    border-radius: 8px;
 }
 
 .modal-text-container {
@@ -820,6 +873,7 @@ body.modal-open {
 .post-it {
     padding: 20px;
     box-shadow: 5px 5px 15px rgba(0,0,0,0.15);
+    position: relative;
     transition: transform 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
@@ -827,6 +881,21 @@ body.modal-open {
     align-items: center;
     text-align: center;
     min-height: 170px;
+}
+
+.post-it::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 18px;
+    background-color: #c9302c; /* Cor de um pino de quadro */
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    border: 2px solid #fff;
+    z-index: 15;
 }
 
 .post-it:hover {
@@ -881,6 +950,135 @@ body.modal-open {
     }
 }
 
+/* --- Estilos para a Seção de Eventos --- */
+
+.events-section {
+    padding: 40px 0;
+    background-color: var(--card-bg); /* Um fundo diferente para destacar a seção */
+    margin-top: 40px;
+}
+
+.events-section h3 {
+    text-align: center;
+}
+
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.event-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background-color: var(--bg-color);
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 5px solid var(--symbol-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.event-date {
+    flex-shrink: 0;
+    background-color: var(--primary-color);
+    color: var(--card-bg);
+    border-radius: 8px;
+    width: 70px;
+    height: 70px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.event-day {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.event-month {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.event-title {
+    margin: 0 0 5px 0;
+    font-size: 1.3rem;
+    color: var(--primary-color);
+    font-family: var(--font-main); /* Usar a fonte principal para clareza */
+    font-weight: 700;
+}
+
+.event-description {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+/* --- Seção de Doação --- */
+
+.donation-section {
+    padding: 40px 0;
+    background-color: var(--primary-color); /* Fundo escuro para contraste */
+    color: var(--card-bg);
+    margin-top: 40px;
+    text-align: center;
+}
+
+.donation-section h3 {
+    color: var(--symbol-color); /* Cor do título igual ao símbolo */
+}
+
+.donation-section p {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.donation-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+    text-align: left;
+}
+
+.donation-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 30px;
+    border-radius: 10px;
+    border: 1px solid var(--symbol-color);
+}
+
+.donation-card h4 {
+    color: var(--card-bg);
+    font-family: var(--font-main);
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.pix-key {
+    background-color: var(--card-bg);
+    color: var(--primary-color);
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    word-wrap: break-word;
+    margin-bottom: 0 !important;
+}
+
 /* --- Estilos para a Página de Contato --- */
 
 .contact-form-container {
@@ -921,6 +1119,42 @@ body.modal-open {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(62, 38, 14, 0.2);
 }
+
+/* --- Estilos para o Mapa --- */
+
+.map-container {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    max-width: 700px;
+    margin: 40px auto 0; /* Adiciona margem superior */
+    text-align: center;
+}
+
+.map-container h3 {
+    margin-top: 0;
+}
+
+.map-responsive {
+    overflow: hidden;
+    padding-bottom: 56.25%; /* Proporção 16:9 */
+    position: relative;
+    height: 0;
+    border-radius: 8px; /* Cantos arredondados para o mapa */
+    margin-top: 20px;
+    border: 1px solid #ddd;
+}
+
+.map-responsive iframe {
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    border: 0;
+}
+
 
 /* Botão Flutuante do WhatsApp */
 .whatsapp-fab {

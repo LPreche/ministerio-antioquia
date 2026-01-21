@@ -21,14 +21,25 @@ function setupHamburgerMenu() {
     const nav = document.querySelector('header nav');
     const body = document.body;
 
-    if (hamburger && nav) {
-        hamburger.addEventListener('click', () => {
-            body.classList.toggle('nav-open');
-            nav.classList.toggle('nav-open');
-            const isExpanded = nav.classList.contains('nav-open');
-            hamburger.setAttribute('aria-expanded', isExpanded);
+    if (!hamburger || !nav) return;
+
+    const toggleMenu = () => {
+        body.classList.toggle('nav-open');
+        nav.classList.toggle('nav-open');
+        const isExpanded = nav.classList.contains('nav-open');
+        hamburger.setAttribute('aria-expanded', isExpanded);
+    };
+
+    hamburger.addEventListener('click', toggleMenu);
+
+    // Fecha o menu hamburguer ao clicar em um link
+    nav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (body.classList.contains('nav-open')) {
+                toggleMenu();
+            }
         });
-    }
+    });
 }
 
 function setupScrollAnimations() {

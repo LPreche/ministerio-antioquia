@@ -1,22 +1,21 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movimento Antioquia - Home</title>
+    <title>Movimento Antioquia - Missões</title>
     <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Roboto:wght@300;400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <header>
         <div class="logo-container">
-            <img src="imagens/logo.jpg" alt="Movimento Antioquia Logo" class="logo">
-            <div class="brand-name">
-                <h1>MOVIMENTO</h1>
-                <p class="subtitle-script">Antioquia</p>
-            </div>
+            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+        </div>
+        <div class="brand-name">
+            <h1>MOVIMENTO</h1>
+            <p class="subtitle-script">Antioquia</p>
         </div>
         <nav>
             <a href="index.html" class="active">Home</a>
@@ -24,6 +23,7 @@
             <a href="missionarios.html">Missionários</a>
             <a href="quadro-tito.html">Quadro Tito</a>
             <a href="contato.html">Contato</a>
+            <a href="#doe-agora" class="nav-donate-btn">DOE agora</a>
         </nav>
         <button class="hamburger-menu" aria-label="Abrir menu" aria-expanded="false">
             <span></span>
@@ -33,34 +33,67 @@
     </header>
 
     <main>
-        <section class="hero">
-            <div class="container animate-on-scroll">
-                <h2>Transformando Vidas Pela Oração e Ação</h2>
-                <p>Inspirados pela igreja primitiva, somos um movimento focado em fazer discípulos e expandir o Reino através da intercessão e missão.</p>
-                <a href="relogio.html" class="btn">Junte-se ao Relógio de Oração</a>
-            </div>
-        </section>
-
-        <section class="about animate-on-scroll">
+        <div class="hero animate-on-scroll">
             <div class="container">
-                <h3>Quem Somos</h3>
-                <p>O nome “Movimento Antioquia” surge inspirado na igreja de Antioquia (Atos 11–13), conhecida por formar discípulos, levantar líderes e enviar missionários para alcançar outras cidades e nações.</p>
-                <p>Assumindo esse nome, afirmamos nosso desejo de ser uma igreja em movimento, ativa, disponível e obediente ao “Ide”, levando o evangelho e alcançando vidas assim como Antioquia fez.</p>
+                <h2>Espalhando a Palavra, Transformando Vidas</h2>
+                <p>O Movimento Antioquia é um ministério de missões da Igreja Batista Independente de Chapecó, dedicado a apoiar e enviar missionários para levar o evangelho a todos os cantos do mundo.</p>
+                <a href="missionarios.html" class="btn">Conheça os Missionários</a>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="grid-2">
+                <div class="about card animate-on-scroll">
+                    <h3>Sobre Nós</h3>
+                    <p>Inspirados pela igreja de Antioquia, que enviou Paulo e Barnabé, nosso propósito é ser uma ponte entre a igreja local e os campos missionários, mobilizando recursos, orações e vocações para a obra de Deus.</p>
+                </div>
+                <div class="mission-vision card animate-on-scroll">
+                    <h3>Nossa Missão</h3>
+                    <p>Nossa missão é glorificar a Deus, obedecendo à Grande Comissão de Jesus, através do envio e sustento de missionários, plantação de igrejas e proclamação do evangelho onde ele ainda não foi anunciado.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Próximos Eventos -->
+        <section class="events-section animate-on-scroll">
+            <div class="container">
+                <h3>Próximos Eventos</h3>
+                <div class="events-grid">
+                    <div class="event-card">
+                        <div class="event-date">
+                            <span class="event-day">15</span>
+                            <span class="event-month">FEV</span>
+                        </div>
+                        <div class="event-details">
+                            <h4 class="event-title">Culto de Missões</h4>
+                            <p class="event-description">Um tempo especial de louvor, palavra e intercessão pelos nossos missionários e pelos povos não alcançados.</p>
+                        </div>
+                    </div>
+                    <!-- Outros eventos podem ser adicionados aqui no futuro -->
+                </div>
             </div>
         </section>
 
-        <section class="mission-vision">
-            <div class="container grid-2">
-                <div class="card animate-on-scroll">
-                    <h4>Nossa Missão</h4>
-                    <p>O Ministério de Missões da IBI Chapecó existe para glorificar a Deus e mobilizar a igreja na Missio Dei, capacitando pessoas para viverem a evangelização, o serviço e o envio missionário em todos os lugares.</p>
-                </div>
-                <div class="card animate-on-scroll">
-                    <h4>Nossa Visão</h4>
-                    <p>Ver uma igreja avivada, cheia do Espírito Santo, que impacta sua comunidade e o mundo, enviando trabalhadores para a seara.</p>
+        <!-- Seção de Doação -->
+        <section id="doe-agora" class="donation-section animate-on-scroll">
+            <div class="container">
+                <h3>Doe Agora</h3>
+                <p>Sua contribuição é fundamental para que nossos missionários continuem espalhando a Palavra. Faça parte desta obra!</p>
+                <div class="donation-options">
+                    <div class="donation-card">
+                        <h4>PIX</h4>
+                        <p>Use nossa chave PIX para uma doação rápida e segura.</p>
+                        <p class="pix-key">ministeriomissoes.ibicco@hotmail.com</p>
+                    </div>
+                    <div class="donation-card">
+                        <h4>Depósito Bancário</h4>
+                        <p>Entre em contato para obter os dados da nossa conta bancária.</p>
+                        <a href="contato.html" class="btn">Entrar em Contato</a>
+                    </div>
                 </div>
             </div>
         </section>
+
     </main>
 
     <footer>
@@ -71,6 +104,10 @@
                 <a href="https://www.instagram.com/movantioquia" target="_blank" rel="noopener noreferrer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                     <span>@movantioquia</span>
+                </a>
+                <a href="https://www.instagram.com/ibichapeco" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <span>@ibichapeco</span>
                 </a>
             </div>
         </div>
