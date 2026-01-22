@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notícias - Movimento Antioquia</title>
+    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+        </div>
+        <div class="brand-name">
+            <h1>MOVIMENTO</h1>
+            <p class="subtitle-script">Antioquia</p>
+        </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="missionarios.html">Missionários</a>
+            <a href="noticias.html" class="active">Notícias</a>
+            <a href="relogio.html">Relógio de Oração</a>
+            <a href="quadro-tito.html">Quadro Tito</a>
+            <a href="index.html#doe-agora" class="nav-donate-btn">DOE agora</a>
+        </nav>
+        <button class="hamburger-menu" aria-label="Abrir menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="about animate-on-scroll">
+                <h3>Notícias do Campo Missionário</h3>
+                <p>Acompanhe as últimas atualizações e testemunhos dos nossos missionários.</p>
+            </div>
+
+            <div class="news-grid">
+                <div class="news-card animate-on-scroll"
+                     data-title="Batismos no Campo Missionário do Uruguai"
+                     data-date="20 de Janeiro, 2026"
+                     data-img-src="https://placehold.co/600x400/A8A9AD/3E260E?text=Batismo"
+                     data-full-story="<p>Com grande alegria, compartilhamos que no último domingo tivemos a celebração de batismos na igreja que apoiamos no Uruguai. Foram cinco novos irmãos que decidiram publicamente seguir a Cristo. Este é o fruto de muito trabalho, oração e do apoio de cada um de vocês.</p><p>O pastor Kleiton Clack expressou sua gratidão: 'Ver vidas sendo transformadas pelo evangelho é o que nos move. Agradecemos a Deus e à igreja no Brasil por nos sustentarem nesta jornada.' Continuemos orando para que a Palavra de Deus continue a avançar e alcançar mais corações no Uruguai.</p>">
+                    <div class="news-card-img-wrapper">
+                        <img src="https://placehold.co/600x400/A8A9AD/3E260E?text=Batismo" alt="Batismos no Uruguai">
+                    </div>
+                    <div class="news-card-content">
+                        <h4>Batismos no Campo Missionário do Uruguai</h4>
+                        <p class="news-card-preview">Com grande alegria, compartilhamos que no último domingo tivemos a celebração de batismos na igreja que apoiamos no Uruguai...</p>
+                        <button class="btn-ver-mais">Ver mais +</button>
+                    </div>
+                </div>
+
+                <div class="news-card animate-on-scroll"
+                     data-title="Avanço do Evangelho no Japão"
+                     data-date="15 de Janeiro, 2026"
+                     data-img-src="https://placehold.co/600x400/A8A9AD/3E260E?text=Japão"
+                     data-full-story="<p>Nossos missionários Jansen e Jessica Costa compartilham sobre os desafios e as alegrias de servir no Japão. Recentemente, eles iniciaram um novo grupo de estudo bíblico com jovens universitários, um passo importante para construir relacionamentos e apresentar o evangelho em um contexto culturalmente rico e complexo.</p><p>'Cada conversa é uma semente plantada. Oramos para que o Senhor faça crescer', diz Jansen. Agradecemos as orações por este ministério.</p>">
+                    <div class="news-card-img-wrapper">
+                        <img src="https://placehold.co/600x400/A8A9AD/3E260E?text=Japão" alt="Evangelismo no Japão">
+                    </div>
+                    <div class="news-card-content">
+                        <h4>Avanço do Evangelho no Japão</h4>
+                        <p class="news-card-preview">Jansen e Jessica Costa compartilham sobre os desafios e as alegrias de servir e iniciar um novo grupo de estudo bíblico...</p>
+                        <button class="btn-ver-mais">Ver mais +</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Notícias -->
+    <div id="news-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Fechar">&times;</button>
+            <div class="modal-body">
+                <img id="modal-img" src="" alt="Imagem da notícia">
+                <h3 id="modal-title"></h3>
+                <p id="modal-date"></p>
+                <div id="modal-full-story"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; <span id="current-year"></span> Movimento Antioquia. Todos os direitos reservados.</p>
+            <p>Contato: ministeriomissoes.ibicco@hotmail.com</p>
+            <div class="footer-social">
+                <a href="https://www.instagram.com/movantioquia" target="_blank" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>@movantioquia</span></a>
+                <a href="https://www.instagram.com/ibichapeco" target="_blank" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>@ibichapeco</span></a>
+            </div>
+        </div>
+    </footer>
+
+    <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
+    <script src="script.js"></script>
+</body>
+</html>

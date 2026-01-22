@@ -228,6 +228,62 @@ function setupPrayerClock() {
     setInterval(updateClockState, 1000); // Continua atualizando a cada segundo
 }
 
+function setupNewsModal() {
+    const newsCards = document.querySelectorAll('.news-card');
+    const modal = document.getElementById('news-modal');
+    if (!newsCards.length || !modal) return;
+
+    const modalCloseBtn = modal.querySelector('.modal-close');
+    const modalImg = document.getElementById('modal-img');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDate = document.getElementById('modal-date');
+    const modalFullStory = document.getElementById('modal-full-story');
+    const body = document.body;
+
+    newsCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const title = card.dataset.title;
+            const date = card.dataset.date;
+            const imgSrc = card.dataset.imgSrc;
+            const fullStory = card.dataset.fullStory;
+
+            modalTitle.textContent = title;
+            modalFullStory.innerHTML = fullStory; // Use innerHTML para interpretar tags HTML como <p>
+
+            if (date) {
+                modalDate.textContent = `Publicado em: ${date}`;
+                modalDate.style.display = 'block';
+            } else {
+                modalDate.style.display = 'none';
+            }
+
+            if (imgSrc) {
+                modalImg.src = imgSrc;
+                modalImg.alt = `Imagem para: ${title}`;
+                modalImg.style.display = 'block';
+            } else {
+                modalImg.style.display = 'none';
+            }
+
+            modal.classList.add('is-visible');
+            body.classList.add('modal-open');
+        });
+    });
+
+    function closeModal() {
+        modal.classList.remove('is-visible');
+        body.classList.remove('modal-open');
+    }
+
+    modalCloseBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    document.addEventListener('keydown', e => e.key === 'Escape' && modal.classList.contains('is-visible') && closeModal());
+}
+
 function setupBackToTopButton() {
     const backToTopButton = document.getElementById('back-to-top');
     if (!backToTopButton) return;
@@ -315,5 +371,6 @@ setupHamburgerMenu();
 setupScrollAnimations();
 setupMissionaryModal();
 setupBackToTopButton();
+setupNewsModal();
 setupPrayerClock();
 setupContactForm();
