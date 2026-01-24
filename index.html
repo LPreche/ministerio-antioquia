@@ -83,9 +83,14 @@
                     <div class="donation-card">
                         <h4>PIX</h4>
                         <p>Use nossa chave PIX para uma doação rápida e segura.</p>
-                        <p class="pix-key">ministeriomissoes.ibicco@hotmail.com</p>
+                        <div class="pix-container">
+                            <p class="pix-key">ministeriomissoes.ibicco@hotmail.com</p>
+                            <button id="open-pix-modal" class="pix-qr-btn" aria-label="Mostrar QR Code">
+                                <img src="imagens/IconQR.png" alt="Ícone de QR Code" width="28" height="28">
+                            </button>
+                        </div>
                     </div>
-                    <div class="donation-card">
+                    <div class="donation-card donation-card--centered-button">
                         <h4>Depósito Bancário</h4>
                         <p>Entre em contato para obter os dados da nossa conta bancária.</p>
                         <a href="contato.html" class="btn">Entrar em Contato</a>
@@ -95,6 +100,20 @@
         </section>
 
     </main>
+
+    <!-- Modal PIX QR Code -->
+    <div id="pix-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Fechar">&times;</button>
+            <div class="modal-body centered-content">
+                <h3>Doar com PIX</h3>
+                <p>Aponte a câmera do seu celular para o QR Code abaixo.</p>
+                <img src="imagens/pix.png" alt="QR Code para doação PIX" id="pix-qr-code-img">
+                <p style="margin-top: 20px; font-weight: bold;">Ou use a chave:</p>
+                <p class="pix-key" style="background-color: #f4f4f4; text-align: center;">ministeriomissoes.ibicco@hotmail.com</p>
+            </div>
+        </div>
+    </div>
 
     <footer>
         <div class="container">

@@ -981,17 +981,29 @@ body.modal-open {
     border-radius: 10px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 0 15px rgba(0,0,0,0.3);
     border: 15px solid #6F4E37; /* Moldura de madeira escura */
-    margin-top: 20px;
+    margin: 20px 5vw 40px;
+}
+
+/* Animação para os post-its */
+@keyframes postItPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5) rotate(var(--rotation, 0deg));
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) rotate(var(--rotation, 0deg));
+    }
 }
 
 .titus-board-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 15px;
 }
 
 .post-it {
-    padding: 20px;
+    padding: 12px;
     box-shadow: 5px 5px 15px rgba(0,0,0,0.15);
     position: relative;
     transition: transform 0.2s ease-in-out;
@@ -1000,7 +1012,9 @@ body.modal-open {
     justify-content: center;
     align-items: center;
     text-align: center;
-    min-height: 170px;
+    min-height: 130px;
+    opacity: 0; /* Começa invisível para a animação */
+    transform: rotate(var(--rotation, 0deg));
 }
 
 .post-it::before {
@@ -1011,12 +1025,18 @@ body.modal-open {
     transform: translateX(-50%);
     width: 18px;
     height: 18px;
-    background-color: #c9302c; /* Cor de um pino de quadro */
     border-radius: 50%;
     box-shadow: 0 2px 5px rgba(0,0,0,0.4);
     border: 2px solid #fff;
     z-index: 15;
 }
+
+/* Cores dos pinos */
+.post-it.color-1::before { background-color: #c9302c; } /* Vermelho */
+.post-it.color-2::before { background-color: #f1c40f; } /* Amarelo */
+.post-it.color-3::before { background-color: #3498db; } /* Azul */
+.post-it.color-4::before { background-color: #8e44ad; } /* Roxo */
+.post-it.color-5::before { background-color: #27ae60; } /* Verde */
 
 .post-it:hover {
     transform: scale(1.05) rotate(0deg) !important; /* Straighten on hover */
@@ -1026,7 +1046,7 @@ body.modal-open {
 
 .post-it-text {
     font-family: var(--font-handwritten);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 400;
     margin: 0;
     flex-grow: 1;
@@ -1034,7 +1054,7 @@ body.modal-open {
 
 .post-it-ref {
     font-family: var(--font-handwritten);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     margin-top: 15px;
     opacity: 0.8;
@@ -1047,22 +1067,31 @@ body.modal-open {
 .post-it.color-4 { background-color: #ffafdf; }
 .post-it.color-5 { background-color: #d7a0ff; }
 
-.titus-board-grid .post-it:nth-child(5n+1) {
-    transform: rotate(-2deg);
-}
-.titus-board-grid .post-it:nth-child(5n+2) {
-    transform: rotate(1.5deg);
-}
-.titus-board-grid .post-it:nth-child(5n+3) {
-    transform: rotate(3deg);
-}
-.titus-board-grid .post-it:nth-child(5n+4) {
-    transform: rotate(-2.5deg);
-}
-.titus-board-grid .post-it:nth-child(5n+5) {
-    transform: rotate(-1deg);
+/* Define a variável de rotação para cada post-it */
+.titus-board-grid .post-it:nth-child(5n+1) { --rotation: -2deg; }
+.titus-board-grid .post-it:nth-child(5n+2) { --rotation: 1.5deg; }
+.titus-board-grid .post-it:nth-child(5n+3) { --rotation: 3deg; }
+.titus-board-grid .post-it:nth-child(5n+4) { --rotation: -2.5deg; }
+.titus-board-grid .post-it:nth-child(5n+5) { --rotation: -1deg; }
+
+/* Aplica a animação quando o quadro estiver visível */
+.titus-board.is-visible .post-it {
+    animation: postItPopIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
+/* Adiciona um atraso para cada post-it para criar um efeito cascata */
+.titus-board.is-visible .post-it:nth-child(1) { animation-delay: 0.05s; }
+.titus-board.is-visible .post-it:nth-child(2) { animation-delay: 0.1s; }
+.titus-board.is-visible .post-it:nth-child(3) { animation-delay: 0.15s; }
+.titus-board.is-visible .post-it:nth-child(4) { animation-delay: 0.2s; }
+.titus-board.is-visible .post-it:nth-child(5) { animation-delay: 0.25s; }
+.titus-board.is-visible .post-it:nth-child(6) { animation-delay: 0.3s; }
+.titus-board.is-visible .post-it:nth-child(7) { animation-delay: 0.35s; }
+.titus-board.is-visible .post-it:nth-child(8) { animation-delay: 0.4s; }
+.titus-board.is-visible .post-it:nth-child(9) { animation-delay: 0.45s; }
+.titus-board.is-visible .post-it:nth-child(10) { animation-delay: 0.5s; }
+.titus-board.is-visible .post-it:nth-child(11) { animation-delay: 0.55s; }
+.titus-board.is-visible .post-it:nth-child(12) { animation-delay: 0.6s; }
 @media (max-width: 768px) {
     .titus-board {
         padding: 20px;
@@ -1179,6 +1208,13 @@ body.modal-open {
     padding: 30px;
     border-radius: 10px;
     border: 1px solid var(--symbol-color);
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.donation-card--centered-button .btn {
+    align-self: center;
 }
 
 .donation-card h4 {
@@ -1189,6 +1225,18 @@ body.modal-open {
     margin-bottom: 15px;
 }
 
+.donation-card p {
+    flex-grow: 1; /* Garante que o conteúdo abaixo (botão) fique alinhado na parte inferior do card */
+}
+
+.pix-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    text-align: left; /* Reseta o alinhamento para o conteúdo do PIX */
+}
+
 .pix-key {
     background-color: var(--card-bg);
     color: var(--primary-color);
@@ -1196,7 +1244,44 @@ body.modal-open {
     border-radius: 5px;
     font-weight: bold;
     word-wrap: break-word;
-    margin-bottom: 0 !important;
+    margin: 0 !important;
+    flex-grow: 1;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    user-select: none; /* Impede a seleção de texto acidental ao clicar */
+}
+
+.pix-key:active {
+    transform: scale(0.98); /* Efeito de clique para feedback */
+}
+
+.pix-qr-btn {
+    flex-shrink: 0;
+    background-color: var(--symbol-color);
+    color: var(--primary-color);
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.pix-qr-btn:hover {
+    background-color: var(--card-bg);
+}
+
+#pix-qr-code-img {
+    max-width: 300px;
+    width: 100%;
+    margin-top: 15px;
+    border-radius: 8px;
+    border: 3px solid var(--primary-color);
+    padding: 8px;
+    background: white;
 }
 
 /* --- Estilos para a Página de Contato --- */

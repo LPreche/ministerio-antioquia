@@ -365,6 +365,79 @@ function setupContactForm() {
     document.addEventListener('keydown', e => e.key === 'Escape' && modal.classList.contains('is-visible') && closeModal());
 }
 
+function setupPixModal() {
+    const pixModal = document.getElementById('pix-modal');
+    const openBtn = document.getElementById('open-pix-modal');
+
+    // Só executa se os elementos existirem na página
+    if (!pixModal || !openBtn) return;
+
+    const closeBtn = pixModal.querySelector('.modal-close');
+    const body = document.body;
+
+    function openModal() {
+        pixModal.classList.add('is-visible');
+        body.classList.add('modal-open');
+    }
+
+    function closeModal() {
+        pixModal.classList.remove('is-visible');
+        body.classList.remove('modal-open');
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    pixModal.addEventListener('click', e => {
+        if (e.target === pixModal) {
+            closeModal();
+        }
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && pixModal.classList.contains('is-visible')) {
+            closeModal();
+        }
+    });
+}
+
+function setupPixCopy() {
+    const pixKeyElements = document.querySelectorAll('.pix-key');
+
+    pixKeyElements.forEach(keyElement => {
+        const originalText = keyElement.textContent.trim();
+        keyElement.title = 'Clique para copiar a chave PIX';
+
+        keyElement.addEventListener('click', () => {
+            // Prevent multiple clicks while in "copied" state
+            if (keyElement.dataset.copied) return;
+
+            navigator.clipboard.writeText(originalText).then(() => {
+                // --- Success Feedback ---
+                keyElement.dataset.copied = 'true';
+                keyElement.textContent = 'Copiado!';
+
+                // Store original inline styles to revert them correctly
+                const originalBg = keyElement.style.backgroundColor;
+                const originalColor = keyElement.style.color;
+
+                // Apply "copied" styles via JS to override any other styles (including inline)
+                keyElement.style.backgroundColor = '#28a745'; // Success green
+                keyElement.style.color = 'white';
+
+                // Revert back after 2 seconds
+                setTimeout(() => {
+                    keyElement.textContent = originalText;
+                    keyElement.style.backgroundColor = originalBg;
+                    keyElement.style.color = originalColor;
+                    delete keyElement.dataset.copied;
+                }, 2000);
+            }).catch(err => {
+                console.error('Falha ao copiar a chave PIX:', err);
+                alert('Não foi possível copiar a chave. Por favor, copie manualmente.');
+            });
+        });
+    });
+}
+
 // --- Inicialização de todas as funções ---
 updateFooter();
 setupHamburgerMenu();
@@ -374,3 +447,5 @@ setupBackToTopButton();
 setupNewsModal();
 setupPrayerClock();
 setupContactForm();
+setupPixModal();
+setupPixCopy();
