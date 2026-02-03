@@ -1,13 +1,5 @@
-// Dados fictícios (depois trocaremos por dados reais)
-const prayerSchedule = [
-    { hour: 0, name: "Grupo Jovem" },
-    // Gera o resto das horas com voluntários genéricos
-    ...Array.from({ length: 23 }, (_, i) => ({ hour: i + 1, name: `Voluntário ${i + 2}` }))
-].flat();
-// Sobrescreve alguns para ter dados mais realistas
-prayerSchedule[1] = { hour: 1, name: "Irmã Maria" };
-prayerSchedule[2] = { hour: 2, name: "Pastor João" };
-prayerSchedule[3] = { hour: 3, name: "Sem voluntário" };
+// Variável global para armazenar o agendamento (será preenchida pela API)
+let prayerSchedule = [];
 
 function updateFooter() {
     const yearElement = document.getElementById('current-year');
@@ -61,54 +53,55 @@ function setupScrollAnimations() {
 }
 
 function setupMissionaryModal() {
-    // Check if we are on a page with missionary cards
-    const missionaryCards = document.querySelectorAll('.missionary-card');
     const modal = document.getElementById('missionary-modal');
-    if (!missionaryCards.length || !modal) return;
+    // Only run if the modal exists on the page
+    if (!modal) return;
 
     const modalCloseBtn = modal.querySelector('.modal-close');
-    const modalImg = document.getElementById('modal-img');
+    const modalImg = modal.querySelector('#modal-img'); // Use querySelector para garantir que pega o do modal certo
     const modalName = document.getElementById('modal-name');
     const modalDescription = document.getElementById('modal-description');
     const body = document.body;
     const modalButton = modal.querySelector('.modal-contribute');
 
-    missionaryCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const name = card.dataset.name;
-            const imgSrc = card.dataset.imgSrc;
-            const longDesc = card.dataset.longDesc;
-            const btnText = card.dataset.btnText;
-            const btnLink = card.dataset.btnLink;
+    // Using Event Delegation to handle clicks on static and dynamic cards
+    document.addEventListener('click', (e) => {
+        const card = e.target.closest('.missionary-card');
+        if (!card) return;
 
-            modalName.textContent = name;
-            modalDescription.textContent = longDesc;
-            modalImg.alt = `Foto de ${name}`;
+        const name = card.dataset.name;
+        const imgSrc = card.dataset.imgSrc;
+        const longDesc = card.dataset.longDesc;
+        const btnText = card.dataset.btnText;
+        const btnLink = card.dataset.btnLink;
 
-            if (imgSrc) {
-                modalImg.src = imgSrc;
-                modalImg.parentElement.style.display = ''; // Garante que o container da imagem seja visível
-            } else {
-                modalImg.parentElement.style.display = 'none'; // Esconde se não houver imagem
-            }
+        modalName.textContent = name;
+        modalDescription.innerHTML = longDesc || ''; // Use innerHTML for potential HTML content
+        modalImg.alt = `Foto de ${name}`;
 
-            // Lida com o botão customizado
-            if (btnText && btnLink) {
-                modalButton.textContent = btnText;
-                modalButton.href = btnLink;
-                modalButton.target = '_blank';
-                modalButton.rel = 'noopener noreferrer';
-            } else {
-                // Reseta para o padrão para os outros missionários
-                modalButton.textContent = 'Contribuir';
-                modalButton.href = '#'; // Link de contribuição padrão
-                modalButton.removeAttribute('target');
-                modalButton.removeAttribute('rel');
-            }
+        if (imgSrc) {
+            modalImg.src = imgSrc;
+            modalImg.parentElement.style.display = '';
+        } else {
+            modalImg.parentElement.style.display = 'none';
+        }
 
-            modal.classList.add('is-visible');
-            body.classList.add('modal-open');
-        });
+        // Handle the button
+        if (btnText && btnLink) {
+            modalButton.textContent = btnText;
+            modalButton.href = btnLink;
+            modalButton.target = '_blank';
+            modalButton.rel = 'noopener noreferrer';
+        } else {
+            // Default for dynamic missionaries
+            modalButton.textContent = 'Contribuir';
+            modalButton.href = 'index.html#doe-agora'; // Points to the donation section
+            modalButton.removeAttribute('target');
+            modalButton.removeAttribute('rel');
+        }
+
+        modal.classList.add('is-visible');
+        body.classList.add('modal-open');
     });
 
     function closeModal() {
@@ -123,7 +116,7 @@ function setupMissionaryModal() {
     });
 }
 
-function setupPrayerClock() {
+async function setupPrayerClock() {
     const clockFace = document.getElementById('clock-face');
     if (!clockFace) return; // Só executa na página do relógio
 
@@ -131,6 +124,40 @@ function setupPrayerClock() {
     const clockTime = document.getElementById('clock');
     const clockHand = document.getElementById('clock-hand');
     const nameListContainer = document.getElementById('prayer-name-list');
+    const motivesListContainer = document.querySelector('.prayer-requests-section ul');
+
+    // --- Busca dados da API ---
+    try {
+        const response = await fetch('/api/relogio');
+        if (response.ok) {
+            const data = await response.json();
+            
+            // 1. Processar Voluntários
+            // O banco retorna horario_escolhido como "HH:MM:SS". Precisamos extrair a hora.
+            prayerSchedule = data.voluntarios.map(vol => { // vol_horario_escolhido, vol_nome_completo
+                const hour = parseInt(vol.vol_horario_escolhido.split(':')[0], 10);
+                return { hour: hour, name: vol.vol_nome_completo };
+            });
+
+            // Preencher horários vazios (caso o banco não tenha as 24h preenchidas)
+            for (let i = 0; i < 24; i++) { // vol_horario_escolhido
+                if (!prayerSchedule.find(p => p.hour === i)) {
+                    prayerSchedule.push({ hour: i, name: "Disponível" });
+                }
+            }
+            // Ordenar por horário
+            prayerSchedule.sort((a, b) => a.hour - b.hour);
+
+            // 2. Processar Motivos de Oração
+            if (motivesListContainer && data.motivos) { // mot_descricao
+                motivesListContainer.innerHTML = data.motivos.map(m => `<li>${m.mot_descricao}</li>`).join('');
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao carregar dados do relógio:", error);
+        // Fallback silencioso ou mensagem de erro na UI se desejar
+    }
+
     const radius = clockFace.offsetWidth / 2 * 0.8; // 80% do raio para dar espaço
 
     let currentActiveName = "Carregando...";
@@ -229,37 +256,38 @@ function setupPrayerClock() {
 }
 
 function setupNewsModal() {
-    const newsCards = document.querySelectorAll('.news-card');
     const modal = document.getElementById('news-modal');
-    if (!newsCards.length || !modal) return;
+    if (!modal) return;
 
     const modalCloseBtn = modal.querySelector('.modal-close');
-    const modalImg = document.getElementById('modal-img');
+    const modalImg = modal.querySelector('#modal-img'); // Use querySelector para garantir que pega o do modal certo
     const modalTitle = document.getElementById('modal-title');
     const modalDate = document.getElementById('modal-date');
     const modalFullStory = document.getElementById('modal-full-story');
     const body = document.body;
 
-    newsCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const title = card.dataset.title;
-            const date = card.dataset.date;
-            const imgSrc = card.dataset.imgSrc;
-            const fullStory = card.dataset.fullStory;
+    // Usando Event Delegation para funcionar com elementos criados dinamicamente
+    document.addEventListener('click', (e) => {
+        const card = e.target.closest('.news-card');
+        if (card) { // ntc_titulo, ntc_data_publicacao, ntc_corpo_mensagem, ntc_imagem_fundo
+            const ntc_titulo = card.dataset.ntc_titulo;
+            const ntc_data_publicacao = card.dataset.ntc_data_publicacao;
+            const ntc_imagem_fundo = card.dataset.ntc_imagem_fundo;
+            const ntc_corpo_mensagem = card.dataset.ntc_corpo_mensagem;
 
-            modalTitle.textContent = title;
-            modalFullStory.innerHTML = fullStory; // Use innerHTML para interpretar tags HTML como <p>
+            modalTitle.textContent = ntc_titulo;
+            modalFullStory.innerHTML = ntc_corpo_mensagem; // Use innerHTML para interpretar tags HTML como <p>
 
-            if (date) {
-                modalDate.textContent = `Publicado em: ${date}`;
+            if (ntc_data_publicacao) {
+                modalDate.textContent = `Publicado em: ${ntc_data_publicacao}`;
                 modalDate.style.display = 'block';
             } else {
                 modalDate.style.display = 'none';
             }
 
-            if (imgSrc) {
-                modalImg.src = imgSrc;
-                modalImg.alt = `Imagem para: ${title}`;
+            if (ntc_imagem_fundo) {
+                modalImg.src = ntc_imagem_fundo;
+                modalImg.alt = `Imagem para: ${ntc_titulo}`;
                 modalImg.style.display = 'block';
             } else {
                 modalImg.style.display = 'none';
@@ -267,7 +295,7 @@ function setupNewsModal() {
 
             modal.classList.add('is-visible');
             body.classList.add('modal-open');
-        });
+        }
     });
 
     function closeModal() {
@@ -438,6 +466,190 @@ function setupPixCopy() {
     });
 }
 
+async function loadNews() {
+    const newsGrid = document.querySelector('.news-grid');
+    if (!newsGrid) return; // Só executa na página de notícias
+
+    try {
+        const response = await fetch('/api/noticias');
+        if (!response.ok) throw new Error('Erro na resposta da API');
+        
+        const noticias = await response.json();
+        newsGrid.innerHTML = ''; // Limpa qualquer conteúdo existente
+
+        noticias.forEach(noticia => {
+            // 1. Formatar Data // ntc_data_publicacao
+            let dataFormatada = '';
+            if (noticia.ntc_data_publicacao) {
+                const data = new Date(noticia.ntc_data_publicacao);
+                dataFormatada = data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+
+            // 2. Gerar Preview do Texto (remove tags HTML e corta) // ntc_corpo_mensagem
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = noticia.ntc_corpo_mensagem;
+            let textoPuro = tempDiv.textContent || tempDiv.innerText || '';
+            let previewText = textoPuro.length > 150 ? textoPuro.substring(0, 150) + '...' : textoPuro;
+
+            // 3. Criar Elemento HTML
+            const card = document.createElement('div');
+            card.className = 'news-card animate-on-scroll is-visible'; // Adiciona is-visible para aparecer imediatamente
+            // Dados para o Modal // ntc_titulo, ntc_data_publicacao, ntc_imagem_fundo, ntc_corpo_mensagem
+            card.dataset.ntc_titulo = noticia.ntc_titulo;
+            card.dataset.ntc_data_publicacao = dataFormatada;
+            card.dataset.ntc_imagem_fundo = noticia.ntc_imagem_fundo;
+            card.dataset.ntc_corpo_mensagem = noticia.ntc_corpo_mensagem;
+
+            card.innerHTML = `
+                <div class="news-card-img-wrapper">
+                    <img src="${noticia.ntc_imagem_fundo}" alt="${noticia.ntc_titulo}">
+                </div>
+                <div class="news-card-content">
+                    <h4>${noticia.ntc_titulo}</h4>
+                    <p class="news-card-preview">${previewText}</p>
+                    <button class="btn-ver-mais">Ver mais +</button>
+                </div>
+            `;
+            newsGrid.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar notícias:', error);
+        newsGrid.innerHTML = '<p>Não foi possível carregar as notícias no momento.</p>';
+    }
+}
+
+async function loadMissionaries() {
+    const grid = document.querySelector('main .grid-2');
+    // Only run on the missionaries page
+    if (!grid || !window.location.pathname.includes('missionarios.html')) return;
+
+    try {
+        const response = await fetch('/api/missionaries');
+        if (!response.ok) throw new Error('Erro na resposta da API de missionários');
+        
+        const missionaries = await response.json();
+
+        const countryCodeMap = {
+            'brasil': 'br', // mis_pais
+            'japão': 'jp', // mis_pais
+            'uruguai': 'uy' // mis_pais
+        };
+
+        missionaries.forEach(missionary => {
+            const card = document.createElement('div');
+            // Add classes for styling and animation
+            card.className = 'missionary-card animate-on-scroll is-visible';
+            // Set data attributes for the modal // mis_imagem_url, mis_descricao_longa
+            card.dataset.name = missionary.nome; // nome é o CONCAT(mis_primeiro_nome, mis_sobrenome)
+            card.dataset.imgSrc = missionary.mis_imagem_url; // mis_imagem_url
+            card.dataset.longDesc = missionary.mis_historia; // mis_historia
+
+            // Simple logic to get country code for flag // mis_pais
+            const countryCode = countryCodeMap[missionary.mis_pais.toLowerCase()] || missionary.mis_pais.toLowerCase().slice(0, 2);
+
+            // Use mis_descricao for the short description on the card
+            let shortDesc = missionary.mis_descricao || '';
+            // If mis_descricao is too long, truncate it
+            if (shortDesc.length > 150) {
+                shortDesc = shortDesc.substring(0, 147) + '...';
+            } else if (shortDesc.length === 0 && missionary.mis_historia) { // Fallback if mis_descricao is empty but mis_historia exists
+                shortDesc = missionary.mis_historia.substring(0, Math.min(missionary.mis_historia.length, 147)) + (missionary.mis_historia.length > 147 ? '...' : '');
+            }
+
+            card.innerHTML = `
+                <div class="missionary-flag">
+                    <img src="https://flagcdn.com/${countryCode}.svg" alt="Bandeira de ${missionary.mis_pais}">
+                </div>
+                <div class="missionary-img-wrapper">
+                    <img src="${missionary.mis_imagem_url || ''}" alt="Foto de ${missionary.nome}">
+                </div>
+                <h4>${missionary.nome}</h4>
+                <p>${shortDesc}</p>
+            `;
+            
+            grid.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar missionários:', error);
+        grid.insertAdjacentHTML('beforeend', '<p>Não foi possível carregar os missionários no momento.</p>');
+    }
+}
+
+async function loadTitusBoard() {
+    const titusGrid = document.querySelector('.titus-board-grid');
+    if (!titusGrid) return; // Só executa na página do quadro
+
+    try {
+        // Esta chamada agora busca apenas os post-its ativos (filtrados por data no backend)
+        const response = await fetch('/api/tito');
+        if (!response.ok) throw new Error('Erro na resposta da API');
+        
+        const postIts = await response.json();
+        titusGrid.innerHTML = ''; // Limpa conteúdo
+
+        if (postIts.length === 0) {
+            titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Não há ensinamentos ativos no quadro no momento.</p>';
+            return;
+        }
+
+        postIts.forEach((postIt, index) => {
+            const colorClass = `color-${(index % 5) + 1}`;
+            const card = document.createElement('div');
+            card.className = `post-it ${colorClass}`;
+            
+            // Conteúdo do post-it sem a referência
+            card.innerHTML = `
+                <p class="post-it-text">${postIt.pst_conteudo}</p>
+            `;
+            titusGrid.appendChild(card);
+        });
+
+        // Força a re-animação se o quadro já estiver visível na carga da página
+        const board = document.querySelector('.titus-board');
+        if (board && board.classList.contains('is-visible')) {
+            // Um pequeno truque para reiniciar a animação em cascata
+            board.classList.remove('is-visible');
+            setTimeout(() => board.classList.add('is-visible'), 50);
+        }
+
+    } catch (error) {
+        console.error('Erro ao carregar Quadro Tito:', error);
+        titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Não foi possível carregar os post-its no momento.</p>';
+    }
+}
+
+function setupTitusWarningModal() {
+    // Só executa na página do quadro tito
+    if (!document.querySelector('.titus-board')) return;
+
+    const modal = document.getElementById('titus-warning-modal');
+    if (!modal) return;
+
+    const okBtn = document.getElementById('titus-warning-ok');
+    const body = document.body;
+
+    function closeModal() {
+        modal.classList.remove('is-visible');
+        body.classList.remove('modal-open');
+    }
+
+    // Mostra o modal em telas de tablet ou menores
+    if (window.innerWidth <= 992) {
+        modal.classList.add('is-visible');
+        body.classList.add('modal-open');
+    }
+
+    okBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modal.classList.contains('is-visible')) closeModal();
+    });
+}
+
 // --- Inicialização de todas as funções ---
 updateFooter();
 setupHamburgerMenu();
@@ -449,3 +661,7 @@ setupPrayerClock();
 setupContactForm();
 setupPixModal();
 setupPixCopy();
+loadNews();
+loadMissionaries();
+loadTitusBoard();
+setupTitusWarningModal();

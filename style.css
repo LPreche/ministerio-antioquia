@@ -998,12 +998,12 @@ body.modal-open {
 
 .titus-board-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
 }
 
 .post-it {
-    padding: 12px;
+    padding: 15px;
     box-shadow: 5px 5px 15px rgba(0,0,0,0.15);
     position: relative;
     transition: transform 0.2s ease-in-out;
@@ -1011,8 +1011,8 @@ body.modal-open {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    text-align: center;
-    min-height: 130px;
+    text-align: center; 
+    min-height: 150px;
     opacity: 0; /* Começa invisível para a animação */
     transform: rotate(var(--rotation, 0deg));
 }
@@ -1046,18 +1046,10 @@ body.modal-open {
 
 .post-it-text {
     font-family: var(--font-handwritten);
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 400;
     margin: 0;
     flex-grow: 1;
-}
-
-.post-it-ref {
-    font-family: var(--font-handwritten);
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-top: 15px;
-    opacity: 0.8;
 }
 
 /* Cores e Rotações dos Post-its */
@@ -1092,10 +1084,32 @@ body.modal-open {
 .titus-board.is-visible .post-it:nth-child(10) { animation-delay: 0.5s; }
 .titus-board.is-visible .post-it:nth-child(11) { animation-delay: 0.55s; }
 .titus-board.is-visible .post-it:nth-child(12) { animation-delay: 0.6s; }
+
+@media (max-width: 1200px) {
+    .titus-board-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .titus-board-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .titus-board {
         padding: 20px;
         border-width: 10px;
+    }
+    .titus-board-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .titus-board-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1415,6 +1429,120 @@ body.modal-open {
 
 .back-to-top:hover {
     background-color: var(--symbol-color);
+}
+
+/* --- Estilos para a Página de Admin --- */
+
+.admin-page-body {
+    background-color: #e9e9e9; /* Um fundo diferente para a área admin */
+}
+
+#admin-header {
+    /* Reutiliza o estilo do header principal, mas pode ter ajustes */
+}
+
+#admin-dashboard {
+    padding: 40px 0;
+}
+
+.admin-section {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 40px;
+}
+
+.admin-section h3 {
+    margin-top: 0;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+
+.btn-add {
+    margin-bottom: 25px;
+    background-color: var(--primary-color);
+    color: var(--card-bg);
+}
+.btn-add:hover {
+    background-color: var(--symbol-color);
+    color: var(--primary-color);
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+.admin-table th {
+    background-color: #f2f2f2;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.admin-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.admin-table td[data-label="Ações"] {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-edit, .btn-delete {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+.btn-edit {
+    background-color: #ffc107; /* Amarelo */
+    color: #333;
+}
+.btn-edit:hover {
+    background-color: #e0a800;
+}
+
+.btn-delete {
+    background-color: #dc3545; /* Vermelho */
+    color: white;
+}
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+#form-modal .modal-body {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+#data-form {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .admin-table thead { display: none; }
+    .admin-table tr { display: block; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .admin-table td { display: block; text-align: right; border-bottom: 1px dotted #ccc; padding-left: 50%; position: relative; }
+    .admin-table td:before { content: attr(data-label); position: absolute; left: 15px; width: calc(50% - 30px); padding-right: 10px; white-space: nowrap; text-align: left; font-weight: bold; }
+    .admin-table td:last-child { border-bottom: 0; }
+    .admin-table td[data-label="Ações"] { justify-content: flex-end; }
 }
 
 @media (max-width: 600px) {

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Movimento Antioquia</title>
+    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-page-body">
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay is-visible">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-body centered-content">
+                <h3>Acesso Restrito</h3>
+                <p>Por favor, insira suas credenciais para continuar.</p>
+                <form id="login-form" style="width: 100%;">
+                    <div class="form-group">
+                        <label for="username" style="text-align: left;">Usuário</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" style="text-align: left;">Senha</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <p id="login-error" style="color: red; display: none;"></p>
+                    <button type="submit" class="btn">Entrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <header id="admin-header" style="display: none;">
+        <div class="logo-container">
+            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+        </div>
+        <div class="brand-name">
+            <h1>PAINEL</h1>
+            <p class="subtitle-script">Administrativo</p>
+        </div>
+        <nav>
+            <a href="index.html" class="nav-donate-btn">Voltar ao Site</a>
+        </nav>
+    </header>
+
+    <main id="admin-dashboard" style="display: none;">
+        <div class="container">
+            <!-- Seção de Notícias -->
+            <section class="admin-section">
+                <h3>Gerenciar Notícias</h3>
+                <button class="btn btn-add" data-section="news">Adicionar Notícia</button>
+                <div class="table-wrapper">
+                    <table class="admin-table" id="news-table">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Data</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Conteúdo carregado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Seção de Missionários (Exemplo) -->
+            <section class="admin-section">
+                <h3>Gerenciar Missionários</h3>
+                <button class="btn btn-add" data-section="missionaries">Adicionar Missionário</button>
+                 <div class="table-wrapper">
+                    <table class="admin-table" id="missionaries-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>País</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Conteúdo carregado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Seção do Relógio de Oração (Exemplo) -->
+            <section class="admin-section">
+                <h3>Gerenciar Relógio de Oração</h3>
+                <button class="btn btn-add" data-section="prayer-clock">Adicionar Voluntário</button>
+                <div class="table-wrapper">
+                    <table class="admin-table" id="prayer-clock-table">
+                        <thead>
+                            <tr>
+                                <th>Horário</th>
+                                <th>Nome do Voluntário</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Conteúdo carregado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Seção do Quadro Tito -->
+            <section class="admin-section">
+                <h3>Gerenciar Quadros de Tito</h3>
+                <button class="btn btn-add" data-section="quadros">Adicionar Quadro</button>
+                <div class="table-wrapper">
+                    <table class="admin-table" id="quadros-table">
+                        <thead>
+                            <tr>
+                                <th>Título do Quadro</th>
+                                <th>Data Inicial</th>
+                                <th>Data Final</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Conteúdo carregado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="admin-section">
+                <h3>Gerenciar Post-its</h3>
+                <button class="btn btn-add" data-section="postits">Adicionar Post-it</button>
+                <div class="table-wrapper">
+                    <table class="admin-table" id="postits-table">
+                        <thead>
+                            <tr>
+                                <th>Conteúdo</th>
+                                <th>Quadro Associado</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Conteúdo carregado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Generic Modal for Add/Edit -->
+    <div id="form-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Fechar">&times;</button>
+            <div class="modal-body">
+                <h3 id="form-modal-title"></h3>
+                <form id="data-form">
+                    <!-- Campos do formulário serão injetados aqui via JS -->
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer id="admin-footer" style="display: none;">
+        <div class="container">
+            <p>&copy; <span id="current-year"></span> Painel Administrativo - Movimento Antioquia.</p>
+        </div>
+    </footer>
+
+    <script src="admin.js"></script>
+</body>
+</html>
