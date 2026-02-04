@@ -2,12 +2,81 @@
 const express = require('express');
 const db = require('./connection');
 const path = require('path');
+const session = require('express-session');
+const crypto = require('crypto');
 const app = express();
 const port = 3000;
 
 // Serve os arquivos estáticos (HTML, CSS, JS, Imagens)
 app.use(express.static(path.join(__dirname, '.')));
 app.use(express.json());
+
+// --- CONFIGURAÇÃO DE SESSÃO ---
+// Em produção, use uma variável de ambiente para o 'secret' e configure 'cookie.secure: true' se estiver usando HTTPS.
+app.use(session({
+    secret: 'a2a7f2d3b1e5c6a7b8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1', // Chave secreta forte. É MUITO importante que você troque este valor por uma string aleatória e longa.
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        httpOnly: true, // Impede acesso via JS no cliente
+        // secure: true, // Descomente em produção com HTTPS
+        maxAge: 24 * 60 * 60 * 1000 // Expira em 24 horas
+    }
+}));
+
+// --- MIDDLEWARE DE AUTENTICAÇÃO ---
+function isAuthenticated(req, res, next) {
+    if (req.session.user) {
+        return next();
+    }
+    res.status(401).json({ error: 'Não autorizado. Faça login para continuar.' });
+}
+
+// --- ENDPOINTS DE AUTENTICAÇÃO ---
+
+// Helper para hash de senha
+function sha256(message) {
+    return crypto.createHash('sha256').update(message).digest('hex');
+}
+
+// POST /api/login
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    // Em uma aplicação real, estes dados viriam de um banco de dados.
+    const CORRECT_USER = 'admin';
+    const CORRECT_PASS_HASH = 'c74659bfb5a1e9ffc11e2b895efbcf625b8eb6a5fc8fff9c1751ecc10fccccd0'; // sha256('Lpreche135#')
+
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Usuário e senha são obrigatórios.' });
+    }
+
+    if (username.trim() === CORRECT_USER && sha256(password.trim()) === CORRECT_PASS_HASH) {
+        req.session.user = { username: CORRECT_USER }; // Cria a sessão
+        res.json({ success: true, message: 'Login bem-sucedido' });
+    } else {
+        res.status(401).json({ success: false, message: 'Usuário ou senha inválidos' });
+    }
+});
+
+// GET /api/check-auth - Verifica se o usuário já está logado
+app.get('/api/check-auth', (req, res) => {
+    if (req.session.user) {
+        res.json({ loggedIn: true, user: req.session.user });
+    } else {
+        res.json({ loggedIn: false });
+    }
+});
+
+// POST /api/logout
+app.post('/api/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.status(500).json({ message: 'Não foi possível fazer logout.' });
+        }
+        res.clearCookie('connect.sid'); // Opcional: Limpa o cookie da sessão do cliente
+        res.status(200).json({ message: 'Logout bem-sucedido' });
+    });
+});
 
 // Endpoint para buscar as notícias do banco de dados
 app.get('/api/noticias', async (req, res) => {
@@ -22,10 +91,10 @@ app.get('/api/noticias', async (req, res) => {
 });
 
 // Endpoint para buscar UMA notícia pelo ID (para edição)
-app.get('/api/noticias/:id', async (req, res) => {
+app.get('/api/noticias/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
-        const [rows] = await db.execute('SELECT id_noticia, ntc_titulo, ntc_data_publicacao, ntc_corpo_mensagem, ntc_imagem_fundo FROM noticias WHERE id_noticia = ?', [id]);
+        const [rows] = await db.execute('SELECT id_noticia, ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo FROM noticias WHERE id_noticia = ?', [id]);
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Notícia não encontrada' });
         }
@@ -37,7 +106,7 @@ app.get('/api/noticias/:id', async (req, res) => {
 });
 
 // Endpoint para ADICIONAR uma nova notícia
-app.post('/api/noticias', async (req, res) => {
+app.post('/api/noticias', isAuthenticated, async (req, res) => {
     try { // ntc_data_publicacao
         const { ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo } = req.body;
         const ntc_data_publicacao = new Date();
@@ -53,7 +122,7 @@ app.post('/api/noticias', async (req, res) => {
 });
 
 // Endpoint para ATUALIZAR uma notícia
-app.put('/api/noticias/:id', async (req, res) => {
+app.put('/api/noticias/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         const { ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo } = req.body;
@@ -69,7 +138,7 @@ app.put('/api/noticias/:id', async (req, res) => {
 });
 
 // Endpoint para DELETAR uma notícia
-app.delete('/api/noticias/:id', async (req, res) => {
+app.delete('/api/noticias/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         await db.execute('DELETE FROM noticias WHERE id_noticia = ?', [id]);
@@ -94,7 +163,7 @@ app.get('/api/missionaries', async (req, res) => {
 });
 
 // GET um por ID
-app.get('/api/missionaries/:id', async (req, res) => {
+app.get('/api/missionaries/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         const [rows] = await db.execute('SELECT id_missionario, mis_primeiro_nome, mis_sobrenome, mis_data_nascimento, mis_cidade, mis_pais, mis_imagem_url, mis_descricao, mis_historia FROM missionarios WHERE id_missionario = ?', [id]); // mis_descricao, mis_historia
@@ -109,7 +178,7 @@ app.get('/api/missionaries/:id', async (req, res) => {
 });
 
 // POST (criar)
-app.post('/api/missionaries', async (req, res) => {
+app.post('/api/missionaries', isAuthenticated, async (req, res) => {
     try {
         const { mis_primeiro_nome, mis_sobrenome, mis_cidade, mis_pais, mis_imagem_url, mis_data_nascimento, mis_descricao, mis_historia } = req.body; // mis_descricao, mis_historia
         const [result] = await db.execute(
@@ -124,7 +193,7 @@ app.post('/api/missionaries', async (req, res) => {
 });
 
 // PUT (atualizar)
-app.put('/api/missionaries/:id', async (req, res) => {
+app.put('/api/missionaries/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         const { mis_primeiro_nome, mis_sobrenome, mis_cidade, mis_pais, mis_imagem_url, mis_data_nascimento, mis_descricao, mis_historia } = req.body; // mis_descricao, mis_historia
@@ -140,7 +209,7 @@ app.put('/api/missionaries/:id', async (req, res) => {
 });
 
 // DELETE
-app.delete('/api/missionaries/:id', async (req, res) => {
+app.delete('/api/missionaries/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         await db.execute('DELETE FROM missionarios WHERE id_missionario = ?', [id]);
@@ -171,7 +240,7 @@ app.get('/api/voluntarios', async (req, res) => {
 });
 
 // GET um por ID
-app.get('/api/voluntarios/:id', async (req, res) => {
+app.get('/api/voluntarios/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         const [rows] = await db.execute('SELECT id_voluntario, id_relogio, vol_nome_completo, vol_horario_escolhido FROM voluntarios WHERE id_voluntario = ?', [id]);
@@ -186,7 +255,7 @@ app.get('/api/voluntarios/:id', async (req, res) => {
 });
 
 // POST (criar)
-app.post('/api/voluntarios', async (req, res) => {
+app.post('/api/voluntarios', isAuthenticated, async (req, res) => {
     try {
         const { vol_nome_completo, vol_horario_escolhido } = req.body;
         const [relogios] = await db.execute('SELECT id_relogio FROM relogio_oracao ORDER BY rel_data_relogio DESC LIMIT 1');
@@ -208,7 +277,7 @@ app.post('/api/voluntarios', async (req, res) => {
 });
 
 // PUT (atualizar)
-app.put('/api/voluntarios/:id', async (req, res) => {
+app.put('/api/voluntarios/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         const { vol_nome_completo, vol_horario_escolhido } = req.body;
@@ -225,7 +294,7 @@ app.put('/api/voluntarios/:id', async (req, res) => {
 });
 
 // DELETE
-app.delete('/api/voluntarios/:id', async (req, res) => {
+app.delete('/api/voluntarios/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         await db.execute('DELETE FROM voluntarios WHERE id_voluntario = ?', [id]);
@@ -257,7 +326,11 @@ app.get('/api/tito', async (req, res) => {
         res.status(500).json({ error: 'Erro interno ao buscar post-its' });
     }
 });
+
+// --- ROTAS DE ADMIN (todas protegidas a partir daqui) ---
+app.use('/api/admin', isAuthenticated);
 // --- Endpoints de Admin para Quadros ---
+
 app.get('/api/admin/quadros', async (req, res) => {
     try {
         const [rows] = await db.execute('SELECT id_quadro, qdt_titulo, qdt_data_inicial, qdt_data_final FROM quadro_tito ORDER BY qdt_data_criacao DESC');

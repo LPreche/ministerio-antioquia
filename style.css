@@ -229,6 +229,28 @@ main {
     color: var(--card-bg);
 }
 
+.btn-primary {
+    background-color: var(--symbol-color);
+    color: var(--primary-color) !important;
+    font-weight: bold;
+    border: 1px solid var(--symbol-color);
+}
+.btn-primary:hover {
+    background-color: var(--card-bg) !important;
+    color: var(--primary-color) !important;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--secondary-color);
+    border: 1px solid var(--secondary-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+}
+
 .about, .mission-vision {
     text-align: center;
     margin-bottom: 40px;
@@ -715,7 +737,7 @@ body.modal-open {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.75);
+    background-color: rgba(62, 38, 14, 0.85); /* Overlay marrom escuro translúcido */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1339,6 +1361,17 @@ body.modal-open {
     box-shadow: 0 0 0 2px rgba(62, 38, 14, 0.2);
 }
 
+.form-button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.form-button-group .btn {
+    flex: 1;
+    text-align: center;
+}
+
 /* --- Estilos para o Mapa --- */
 
 .map-container {
@@ -1434,11 +1467,28 @@ body.modal-open {
 /* --- Estilos para a Página de Admin --- */
 
 .admin-page-body {
-    background-color: #e9e9e9; /* Um fundo diferente para a área admin */
+    background-color: var(--bg-color); /* Fundo padrão do site */
 }
 
 #admin-header {
     /* Reutiliza o estilo do header principal, mas pode ter ajustes */
+    /* O JS já aplica 'display: flex', o que nos permite alinhar itens. */
+}
+
+#logout-btn {
+    margin-left: auto; /* Empurra o botão para a direita do header */
+    background-color: var(--symbol-color);
+    color: var(--primary-color) !important;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+#logout-btn:hover {
+    background-color: var(--card-bg) !important;
+    color: var(--primary-color) !important;
 }
 
 #admin-dashboard {

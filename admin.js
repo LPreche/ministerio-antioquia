@@ -5,45 +5,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminDashboard = document.getElementById('admin-dashboard');
     const adminHeader = document.getElementById('admin-header');
     const adminFooter = document.getElementById('admin-footer');
+    // Se você adicionar um botão de logout no seu admin.html com id="logout-btn", este código irá funcionar.
+    const logoutBtn = document.getElementById('logout-btn');
 
     // --- LOGIN LOGIC ---
-    const CORRECT_USER = 'admin';
-    const CORRECT_PASS_HASH = 'c74659bfb5a1e9ffc11e2b895efbcf625b8eb6a5fc8fff9c1751ecc10fccccd0';
+    function showDashboard() {
+        loginModal.classList.remove('is-visible');
+        adminDashboard.style.display = 'block';
+        adminHeader.style.display = 'flex';
+        adminFooter.style.display = 'block';
+        
+        // Load initial data
+        loadAdminNews();
+        loadAdminMissionaries();
+        loadAdminPrayerClock();
+        loadAdminQuadros();
+        loadAdminPostits();
+    }
 
-    async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        return hashHex;
+    async function checkAuthStatus() {
+        try {
+            const response = await fetch('/api/check-auth');
+            const result = await response.json();
+            if (result.loggedIn) {
+                showDashboard();
+            } else {
+                loginModal.classList.add('is-visible');
+            }
+        } catch (error) {
+            console.error('Falha ao verificar autenticação:', error);
+            loginModal.classList.add('is-visible');
+        }
     }
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const username = e.target.username.value.trim(); // Remove espaços em branco
-        const password = e.target.password.value.trim(); // Garante que espaços na senha sejam ignorados
-        
-        const passwordHash = await sha256(password);
+        loginError.textContent = '';
+        loginError.style.display = 'none';
 
-        if (username === CORRECT_USER && passwordHash === CORRECT_PASS_HASH) {
-            // Login successful
-            loginModal.classList.remove('is-visible');
-            adminDashboard.style.display = 'block';
-            adminHeader.style.display = 'flex';
-            adminFooter.style.display = 'block';
-            
-            // Load initial data
-            loadAdminNews();
-            loadAdminMissionaries();
-            loadAdminPrayerClock();
-            loadAdminQuadros();
-            loadAdminPostits();
-        } else {
-            // Login failed
-            loginError.textContent = 'Usuário ou senha inválidos.';
+        const username = e.target.username.value;
+        const password = e.target.password.value;
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                showDashboard();
+            } else {
+                loginError.textContent = result.message || 'Usuário ou senha inválidos.';
+                loginError.style.display = 'block';
+            }
+        } catch (error) {
+            loginError.textContent = 'Erro de conexão ao tentar fazer login.';
             loginError.style.display = 'block';
         }
     });
+
+    // Verifica o status de login ao carregar a página
+    checkAuthStatus();
 
     // --- CRUD LOGIC ---
 
@@ -603,5 +627,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearElement = document.getElementById('current-year');
     if (yearElement) {
         yearElement.innerText = new Date().getFullYear();
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.reload(); // Recarrega a página para mostrar o modal de login
+            } catch (error) {
+                alert('Não foi possível fazer logout.');
+            }
+        });
     }
 });

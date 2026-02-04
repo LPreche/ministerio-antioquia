@@ -650,6 +650,31 @@ function setupTitusWarningModal() {
     });
 }
 
+function setupAdminRedirect() {
+    const brandName = document.querySelector('.brand-name');
+    if (!brandName) return;
+
+    let pressTimer;
+
+    const startPress = (e) => {
+        // Previne comportamento padrão em touch, como scroll
+        e.preventDefault();
+        pressTimer = window.setTimeout(() => {
+            window.location.href = 'admin.html';
+        }, 5000); // 5 segundos
+    };
+
+    const cancelPress = () => {
+        clearTimeout(pressTimer);
+    };
+
+    brandName.addEventListener('mousedown', startPress);
+    brandName.addEventListener('mouseup', cancelPress);
+    brandName.addEventListener('mouseleave', cancelPress);
+    brandName.addEventListener('touchstart', startPress, { passive: false });
+    brandName.addEventListener('touchend', cancelPress);
+}
+
 // --- Inicialização de todas as funções ---
 updateFooter();
 setupHamburgerMenu();
@@ -665,3 +690,4 @@ loadNews();
 loadMissionaries();
 loadTitusBoard();
 setupTitusWarningModal();
+setupAdminRedirect(); // Adiciona o listener para o redirecionamento secreto
