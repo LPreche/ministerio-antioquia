@@ -7,6 +7,12 @@ const crypto = require('crypto');
 const app = express();
 const port = 3000;
 
+// Middleware para logar todas as requisições recebidas
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] Requisição recebida: ${req.method} ${req.url}`);
+    next();
+});
+
 // Serve os arquivos estáticos (HTML, CSS, JS, Imagens)
 app.use(express.static(path.join(__dirname, '.')));
 app.use(express.json());
@@ -91,10 +97,10 @@ app.get('/api/noticias', async (req, res) => {
 });
 
 // Endpoint para buscar UMA notícia pelo ID (para edição)
-app.get('/api/noticias/:id', isAuthenticated, async (req, res) => {
+app.get('/api/noticias/:id', async (req, res) => { // Tornando público para o modal de notícias
     try {
         const { id } = req.params;
-        const [rows] = await db.execute('SELECT id_noticia, ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo FROM noticias WHERE id_noticia = ?', [id]);
+        const [rows] = await db.execute('SELECT id_noticia, ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao FROM noticias WHERE id_noticia = ?', [id]);
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Notícia não encontrada' });
         }
@@ -108,8 +114,7 @@ app.get('/api/noticias/:id', isAuthenticated, async (req, res) => {
 // Endpoint para ADICIONAR uma nova notícia
 app.post('/api/noticias', isAuthenticated, async (req, res) => {
     try { // ntc_data_publicacao
-        const { ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo } = req.body;
-        const ntc_data_publicacao = new Date();
+        const { ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao } = req.body;
         const [result] = await db.execute(
             'INSERT INTO noticias (ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao) VALUES (?, ?, ?, ?)',
             [ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao]
@@ -125,10 +130,10 @@ app.post('/api/noticias', isAuthenticated, async (req, res) => {
 app.put('/api/noticias/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
-        const { ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo } = req.body;
+        const { ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao } = req.body;
         await db.execute(
-            'UPDATE noticias SET ntc_titulo = ?, ntc_corpo_mensagem = ?, ntc_imagem_fundo = ? WHERE id_noticia = ?',
-            [ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, id]
+            'UPDATE noticias SET ntc_titulo = ?, ntc_corpo_mensagem = ?, ntc_imagem_fundo = ?, ntc_data_publicacao = ? WHERE id_noticia = ?',
+            [ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao, id]
         );
         res.json({ message: 'Notícia atualizada com sucesso' });
     } catch (error) {
@@ -223,15 +228,16 @@ app.delete('/api/missionaries/:id', isAuthenticated, async (req, res) => {
 
 // --- CRUD para Voluntários do Relógio de Oração ---
 
-// GET todos os voluntários do último relógio
-app.get('/api/voluntarios', async (req, res) => {
+// GET todos os voluntários de um relógio específico (via query param)
+app.get('/api/voluntarios', isAuthenticated, async (req, res) => { // Tornando autenticado
     try {
-        const [relogios] = await db.execute('SELECT id_relogio FROM relogio_oracao ORDER BY rel_data_relogio DESC LIMIT 1');
-        if (relogios.length === 0) {
-            return res.json([]); // Retorna array vazio se não houver relógio
+        const { relogioId } = req.query;
+
+        if (!relogioId) {
+            return res.json([]);
         }
-        const latestClockId = relogios[0].id_relogio;
-        const [rows] = await db.execute('SELECT id_voluntario, vol_nome_completo, vol_horario_escolhido FROM voluntarios WHERE id_relogio = ? ORDER BY vol_horario_escolhido', [latestClockId]);
+
+        const [rows] = await db.execute('SELECT id_voluntario, vol_nome_completo, vol_horario_escolhido FROM voluntarios WHERE id_relogio = ? ORDER BY vol_horario_escolhido', [relogioId]);
         res.json(rows);
     } catch (error) {
         console.error('Erro ao buscar voluntários:', error);
@@ -257,17 +263,16 @@ app.get('/api/voluntarios/:id', isAuthenticated, async (req, res) => {
 // POST (criar)
 app.post('/api/voluntarios', isAuthenticated, async (req, res) => {
     try {
-        const { vol_nome_completo, vol_horario_escolhido } = req.body;
-        const [relogios] = await db.execute('SELECT id_relogio FROM relogio_oracao ORDER BY rel_data_relogio DESC LIMIT 1');
-        if (relogios.length === 0) {
-            return res.status(400).json({ error: 'Nenhum relógio de oração ativo para associar o voluntário.' });
+        const { vol_nome_completo, vol_horario_escolhido, id_relogio } = req.body; // Adicionado id_relogio
+        
+        if (!id_relogio) {
+            return res.status(400).json({ error: 'É necessário especificar o relógio de oração para associar o voluntário.' });
         }
-        const latestClockId = relogios[0].id_relogio;
         const horario = `${String(vol_horario_escolhido).padStart(2, '0')}:00:00`;
 
         const [result] = await db.execute(
             'INSERT INTO voluntarios (id_relogio, vol_nome_completo, vol_horario_escolhido) VALUES (?, ?, ?)',
-            [latestClockId, vol_nome_completo, horario]
+            [id_relogio, vol_nome_completo, horario]
         );
         res.status(201).json({ id: result.insertId, ...req.body });
     } catch (error) {
@@ -311,133 +316,316 @@ app.delete('/api/voluntarios/:id', isAuthenticated, async (req, res) => {
 // GET (Public): Retorna todos os post-its do quadro ativo no momento
 app.get('/api/tito', async (req, res) => {
     try {
-        // Junta as tabelas para pegar os post-its que pertencem a um quadro ativo
-        const query = `
-            SELECT p.id_postit, p.pst_conteudo 
-            FROM post_it p
-            JOIN quadro_tito q ON p.id_quadro = q.id_quadro
-            WHERE CURDATE() BETWEEN q.qdt_data_inicial AND q.qdt_data_final
-            ORDER BY p.id_postit DESC
-        `;
-        const [rows] = await db.execute(query);
-        res.json(rows);
+        // 1. Encontrar o quadro ativo
+        const [activeBoards] = await db.execute(
+            'SELECT id_quadro, qdt_data_inicial, qdt_data_final FROM quadro_tito WHERE CURDATE() BETWEEN qdt_data_inicial AND qdt_data_final ORDER BY qdt_data_criacao DESC LIMIT 1'
+        );
+
+        if (activeBoards.length === 0) {
+            return res.json({ board: null, postIts: [] }); // No active board
+        }
+
+        const activeBoard = activeBoards[0];
+
+        // 2. Buscar os post-its para esse quadro
+        const [postIts] = await db.execute(
+            'SELECT id_postit, pst_conteudo FROM post_it WHERE id_quadro = ? ORDER BY id_postit DESC',
+            [activeBoard.id_quadro]
+        );
+
+        res.json({ board: activeBoard, postIts: postIts });
+
     } catch (error) {
-        console.error('Erro ao buscar post-its do Quadro Tito:', error);
-        res.status(500).json({ error: 'Erro interno ao buscar post-its' });
+        console.error('Erro ao buscar dados do Quadro Tito:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar dados do Quadro Tito' });
     }
 });
 
 // --- ROTAS DE ADMIN (todas protegidas a partir daqui) ---
-app.use('/api/admin', isAuthenticated);
-// --- Endpoints de Admin para Quadros ---
+// app.use('/api/admin', isAuthenticated); // Removido para aplicar autenticação individualmente
 
-app.get('/api/admin/quadros', async (req, res) => {
+// --- Endpoints de Admin para Relógios de Oração ---
+app.get('/api/relogios', isAuthenticated, async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT id_quadro, qdt_titulo, qdt_data_inicial, qdt_data_final FROM quadro_tito ORDER BY qdt_data_criacao DESC');
+        const [rows] = await db.execute('SELECT id_relogio, rel_titulo, rel_data_relogio FROM relogio_oracao ORDER BY rel_data_relogio DESC');
         res.json(rows);
     } catch (error) {
+        console.error('Erro ao buscar relógios:', error);
+        res.status(500).json({ error: 'Erro ao buscar relógios.' });
+    }
+});
+
+app.get('/api/relogios/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await db.execute('SELECT id_relogio, rel_titulo, rel_data_relogio FROM relogio_oracao WHERE id_relogio = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Relógio não encontrado.' });
+        }
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Erro ao buscar relógio por ID:', error);
+        res.status(500).json({ error: 'Erro ao buscar relógio.' });
+    }
+});
+
+app.post('/api/relogios', isAuthenticated, async (req, res) => {
+    try {
+        const { rel_titulo, rel_data_relogio } = req.body;
+        const [result] = await db.execute(
+            'INSERT INTO relogio_oracao (rel_titulo, rel_data_relogio) VALUES (?, ?)',
+            [rel_titulo, rel_data_relogio]
+        );
+        res.status(201).json({ id: result.insertId, ...req.body });
+    } catch (error) {
+        console.error('Erro ao criar relógio:', error);
+        res.status(500).json({ error: 'Erro ao criar relógio.' });
+    }
+});
+
+app.put('/api/relogios/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rel_titulo, rel_data_relogio } = req.body;
+        await db.execute(
+            'UPDATE relogio_oracao SET rel_titulo = ?, rel_data_relogio = ? WHERE id_relogio = ?',
+            [rel_titulo, rel_data_relogio, id]
+        );
+        res.json({ message: 'Relógio atualizado com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao atualizar relógio:', error);
+        res.status(500).json({ error: 'Erro ao atualizar relógio.' });
+    }
+});
+
+app.delete('/api/relogios/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.execute('DELETE FROM voluntarios WHERE id_relogio = ?', [id]);
+        await db.execute('DELETE FROM motivos_oracao WHERE id_relogio = ?', [id]);
+        await db.execute('DELETE FROM relogio_oracao WHERE id_relogio = ?', [id]);
+        res.status(204).send();
+    } catch (error) {
+        console.error('Erro ao deletar relógio:', error);
+        res.status(500).json({ error: 'Erro ao deletar relógio.' });
+    }
+});
+// --- Endpoints de Admin para Quadros ---
+
+app.get('/api/quadros', isAuthenticated, async (req, res) => {
+    try {
+        const [rows] = await db.execute('SELECT id_quadro, qdt_data_inicial, qdt_data_final FROM quadro_tito ORDER BY qdt_data_criacao DESC');
+        res.json(rows);
+    } catch (error) {
+        console.error('Erro ao buscar quadros:', error);
         res.status(500).json({ error: 'Erro ao buscar quadros.' });
     }
 });
 
-app.get('/api/admin/quadros/:id', async (req, res) => {
+app.get('/api/quadros/:id', isAuthenticated, async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT id_quadro, qdt_titulo, qdt_data_inicial, qdt_data_final FROM quadro_tito WHERE id_quadro = ?', [req.params.id]);
+        const [rows] = await db.execute('SELECT id_quadro, qdt_data_inicial, qdt_data_final FROM quadro_tito WHERE id_quadro = ?', [req.params.id]);
         res.json(rows[0]);
     } catch (error) {
+        console.error('Erro ao buscar quadro:', error);
         res.status(500).json({ error: 'Erro ao buscar quadro.' });
     }
 });
 
-app.post('/api/admin/quadros', async (req, res) => {
+app.post('/api/quadros', isAuthenticated, async (req, res) => {
     try {
-        const { qdt_titulo, qdt_data_inicial, qdt_data_final } = req.body;
+        const { qdt_data_inicial, qdt_data_final } = req.body;
+
+        // Validação de sobreposição de datas
+        const [overlapping] = await db.execute(
+            `SELECT id_quadro FROM quadro_tito WHERE 
+            (? BETWEEN qdt_data_inicial AND qdt_data_final) OR 
+            (? BETWEEN qdt_data_inicial AND qdt_data_final) OR 
+            (qdt_data_inicial BETWEEN ? AND ?)`,
+            [qdt_data_inicial, qdt_data_final, qdt_data_inicial, qdt_data_final]
+        );
+
+        if (overlapping.length > 0) {
+            return res.status(400).json({ error: 'O período selecionado se sobrepõe a um quadro existente.' });
+        }
+
         const [result] = await db.execute(
-            'INSERT INTO quadro_tito (qdt_titulo, qdt_data_inicial, qdt_data_final, qdt_data_criacao) VALUES (?, ?, ?, NOW())',
-            [qdt_titulo, qdt_data_inicial, qdt_data_final]
+            'INSERT INTO quadro_tito (qdt_data_inicial, qdt_data_final, qdt_data_criacao) VALUES (?, ?, NOW())',
+            [qdt_data_inicial, qdt_data_final]
         );
         res.status(201).json({ id: result.insertId, ...req.body });
     } catch (error) {
+        console.error('Erro ao criar quadro:', error);
         res.status(500).json({ error: 'Erro ao criar quadro.' });
     }
 });
 
-app.put('/api/admin/quadros/:id', async (req, res) => {
+app.put('/api/quadros/:id', isAuthenticated, async (req, res) => {
     try {
-        const { qdt_titulo, qdt_data_inicial, qdt_data_final } = req.body;
+        const { id } = req.params;
+        const { qdt_data_inicial, qdt_data_final } = req.body;
+
+        // Validação de sobreposição de datas, excluindo o quadro atual
+        const [overlapping] = await db.execute(
+            `SELECT id_quadro FROM quadro_tito WHERE 
+            id_quadro != ? AND (
+                (? BETWEEN qdt_data_inicial AND qdt_data_final) OR 
+                (? BETWEEN qdt_data_inicial AND qdt_data_final) OR 
+                (qdt_data_inicial BETWEEN ? AND ?)
+            )`,
+            [id, qdt_data_inicial, qdt_data_final, qdt_data_inicial, qdt_data_final]
+        );
+
+        if (overlapping.length > 0) {
+            return res.status(400).json({ error: 'O período selecionado se sobrepõe a um quadro existente.' });
+        }
+
         await db.execute(
-            'UPDATE quadro_tito SET qdt_titulo = ?, qdt_data_inicial = ?, qdt_data_final = ? WHERE id_quadro = ?',
-            [qdt_titulo, qdt_data_inicial, qdt_data_final, req.params.id]
+            'UPDATE quadro_tito SET qdt_data_inicial = ?, qdt_data_final = ? WHERE id_quadro = ?',
+            [qdt_data_inicial, qdt_data_final, id]
         );
         res.json({ message: 'Quadro atualizado.' });
     } catch (error) {
+        console.error('Erro ao atualizar quadro:', error);
         res.status(500).json({ error: 'Erro ao atualizar quadro.' });
     }
 });
 
-app.delete('/api/admin/quadros/:id', async (req, res) => {
+app.delete('/api/quadros/:id', isAuthenticated, async (req, res) => {
     try {
         // Opcional: verificar se existem post-its antes de deletar
         await db.execute('DELETE FROM post_it WHERE id_quadro = ?', [req.params.id]); // Deleta os post-its associados
         await db.execute('DELETE FROM quadro_tito WHERE id_quadro = ?', [req.params.id]); // Deleta o quadro
         res.status(204).send();
     } catch (error) {
+        console.error('Erro ao deletar quadro:', error);
         res.status(500).json({ error: 'Erro ao deletar quadro.' });
     }
 });
 
 // --- Endpoints de Admin para Post-its ---
-app.get('/api/admin/postits', async (req, res) => {
+app.get('/api/postits', isAuthenticated, async (req, res) => {
     try {
-        const query = `
-            SELECT p.id_postit, p.pst_conteudo, q.qdt_titulo, q.id_quadro
-            FROM post_it p
-            LEFT JOIN quadro_tito q ON p.id_quadro = q.id_quadro
-            ORDER BY p.id_postit DESC
-        `;
-        const [rows] = await db.execute(query);
+        const { quadroId } = req.query;
+        if (!quadroId) {
+            return res.json([]); // Return empty if no quadro is selected
+        }
+        const [rows] = await db.execute('SELECT id_postit, pst_conteudo FROM post_it WHERE id_quadro = ? ORDER BY id_postit DESC', [quadroId]);
         res.json(rows);
     } catch (error) {
+        console.error('Erro ao buscar post-its:', error);
         res.status(500).json({ error: 'Erro ao buscar post-its.' });
     }
 });
 
-app.get('/api/admin/postits/:id', async (req, res) => {
+app.get('/api/postits/:id', isAuthenticated, async (req, res) => {
     try {
         const [rows] = await db.execute('SELECT id_postit, pst_conteudo, id_quadro FROM post_it WHERE id_postit = ?', [req.params.id]);
         res.json(rows[0]);
     } catch (error) {
+        console.error('Erro ao buscar post-it:', error);
         res.status(500).json({ error: 'Erro ao buscar post-it.' });
     }
 });
 
-app.post('/api/admin/postits', async (req, res) => {
+app.post('/api/postits', isAuthenticated, async (req, res) => {
     try {
         const { pst_conteudo, id_quadro } = req.body;
         const [result] = await db.execute('INSERT INTO post_it (pst_conteudo, id_quadro) VALUES (?, ?)', [pst_conteudo, id_quadro]);
         res.status(201).json({ id: result.insertId, ...req.body });
     } catch (error) {
+        console.error('Erro ao criar post-it:', error);
         res.status(500).json({ error: 'Erro ao criar post-it.' });
     }
 });
 
-app.put('/api/admin/postits/:id', async (req, res) => {
+app.put('/api/postits/:id', isAuthenticated, async (req, res) => {
     try {
         const { pst_conteudo, id_quadro } = req.body;
         await db.execute('UPDATE post_it SET pst_conteudo = ?, id_quadro = ? WHERE id_postit = ?', [pst_conteudo, id_quadro, req.params.id]);
         res.json({ message: 'Post-it atualizado.' });
     } catch (error) {
+        console.error('Erro ao atualizar post-it:', error);
         res.status(500).json({ error: 'Erro ao atualizar post-it.' });
     }
 });
 
-app.delete('/api/admin/postits/:id', async (req, res) => {
+app.delete('/api/postits/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         await db.execute('DELETE FROM post_it WHERE id_postit = ?', [id]);
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: 'Erro ao deletar post-it.' });
+    }
+});
+
+// --- Endpoints de Admin para Motivos de Oração ---
+app.get('/api/motivos-oracao', isAuthenticated, async (req, res) => {
+    try {
+        const { relogioId } = req.query;
+        if (!relogioId) {
+            return res.json([]);
+        }
+        const [rows] = await db.execute('SELECT id_motivo, mot_descricao FROM motivos_oracao WHERE id_relogio = ? ORDER BY id_motivo', [relogioId]);
+        res.json(rows);
+    } catch (error) {
+        console.error('Erro ao buscar motivos de oração:', error);
+        res.status(500).json({ error: 'Erro ao buscar motivos de oração.' });
+    }
+});
+
+app.get('/api/motivos-oracao/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await db.execute('SELECT id_motivo, mot_descricao, id_relogio FROM motivos_oracao WHERE id_motivo = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Motivo de oração não encontrado.' });
+        }
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Erro ao buscar motivo de oração por ID:', error);
+        res.status(500).json({ error: 'Erro ao buscar motivo de oração.' });
+    }
+});
+
+app.post('/api/motivos-oracao', isAuthenticated, async (req, res) => {
+    try {
+        const { mot_descricao, id_relogio } = req.body;
+        if (!id_relogio || !mot_descricao) {
+            return res.status(400).json({ error: 'Descrição e ID do relógio são obrigatórios.' });
+        }
+        const [result] = await db.execute(
+            'INSERT INTO motivos_oracao (mot_descricao, id_relogio) VALUES (?, ?)',
+            [mot_descricao, id_relogio]
+        );
+        res.status(201).json({ id: result.insertId, ...req.body });
+    } catch (error) {
+        console.error('Erro ao criar motivo de oração:', error);
+        res.status(500).json({ error: 'Erro ao criar motivo de oração.' });
+    }
+});
+
+app.put('/api/motivos-oracao/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { mot_descricao } = req.body;
+        await db.execute('UPDATE motivos_oracao SET mot_descricao = ? WHERE id_motivo = ?', [mot_descricao, id]);
+        res.json({ message: 'Motivo de oração atualizado com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao atualizar motivo de oração:', error);
+        res.status(500).json({ error: 'Erro ao atualizar motivo de oração.' });
+    }
+});
+
+app.delete('/api/motivos-oracao/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.execute('DELETE FROM motivos_oracao WHERE id_motivo = ?', [id]);
+        res.status(204).send();
+    } catch (error) {
+        console.error('Erro ao deletar motivo de oração:', error);
+        res.status(500).json({ error: 'Erro ao deletar motivo de oração.' });
     }
 });
 // Endpoint para buscar dados do Relógio de Oração

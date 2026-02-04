@@ -12,6 +12,14 @@ const connection = mysql.createPool({
     queueLimit: 0
 });
 
-console.log('Pool de conexões criado para o banco movimento_antioquia');
+// Testa a conexão para garantir que o pool foi criado com sucesso
+connection.getConnection()
+    .then(conn => {
+        console.log('✅ Conexão com o banco de dados estabelecida com sucesso.');
+        conn.release(); // Libera a conexão de volta para o pool
+    })
+    .catch(err => {
+        console.error('❌ ERRO FATAL: Não foi possível conectar ao banco de dados:', err);
+    });
 
 module.exports = connection;

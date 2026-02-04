@@ -6,6 +6,8 @@
     <title>Admin - Movimento Antioquia</title>
     <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
     <link rel="stylesheet" href="style.css">
+    <!-- Adiciona o script do TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/dj1kbxz4o1a8ny7yrofytwwmuxouvobv4gu9bx4gk9xtesx6/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body class="admin-page-body">
 
@@ -47,105 +49,155 @@
 
     <main id="admin-dashboard" style="display: none;">
         <div class="container">
-            <!-- Seção de Notícias -->
-            <section class="admin-section">
-                <h3>Gerenciar Notícias</h3>
-                <button class="btn btn-add" data-section="news">Adicionar Notícia</button>
-                <div class="table-wrapper">
-                    <table class="admin-table" id="news-table">
-                        <thead>
-                            <tr>
-                                <th>Título</th>
-                                <th>Data</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Conteúdo carregado via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            <div class="admin-tabs-nav">
+                <button class="admin-tab-btn active" data-target="news-section">Notícias</button>
+                <button class="admin-tab-btn" data-target="missionaries-section">Missionários</button>
+                <button class="admin-tab-btn" data-target="prayer-clock-section">Relógio de Oração</button>
+                <button class="admin-tab-btn" data-target="tito-section">Quadro Tito</button>
+            </div>
+    
+            <div class="admin-sections-container">
+                <div class="admin-sections-wrapper">
+                    <!-- Seção de Notícias -->
+                    <section id="news-section" class="admin-section">
+                        <h3>Gerenciar Notícias</h3>
+                        <button class="btn btn-add" data-section="news">Adicionar Notícia</button>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="news-table">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Data</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Conteúdo carregado via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+    
+                    <!-- Seção de Missionários (Exemplo) -->
+                    <section id="missionaries-section" class="admin-section">
+                        <h3>Gerenciar Missionários</h3>
+                        <button class="btn btn-add" data-section="missionaries">Adicionar Missionário</button>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="missionaries-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>País</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Conteúdo carregado via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+    
+                    <!-- Seção do Relógio de Oração (Exemplo) -->
+                    <section id="prayer-clock-section" class="admin-section">
+                        <h3>Gerenciar Relógio de Oração</h3>
+    
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                            <div class="form-group" style="margin-bottom: 0; flex-grow: 1; min-width: 250px;">
+                                <label for="relogio-select">Selecione um Relógio</label>
+                                <select id="relogio-select" name="relogio-select" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"></select>
+                            </div>
+                            <div id="relogio-buttons" style="display: flex; gap: 10px;">
+                                <button class="btn btn-primary" id="btn-edit-relogio" style="display: none;">Editar Relógio</button>
+                                <button class="btn btn-dark" id="btn-add-relogio">Cadastrar Relógio</button>
+                            </div>
+                        </div>
+    
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;">
+    
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">VOLUNTÁRIOS</h4>
+                        </div>
+                        <div style="text-align: right; margin-bottom: 25px;">
+                            <button class="btn btn-add" data-section="prayer-clock" id="btn-add-volunteer" disabled>Adicionar Voluntário</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="prayer-clock-table">
+                                <thead>
+                                    <tr>
+                                        <th>Horário</th>
+                                        <th>Nome do Voluntário</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="3">Selecione um relógio para ver os voluntários.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+    
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 40px 0 25px;">
+    
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">MOTIVOS DE ORAÇÃO</h4>
+                        </div>
+                        <div style="text-align: right; margin-bottom: 25px;">
+                            <button class="btn btn-add" data-section="motivos-oracao" id="btn-add-motivo" disabled>Adicionar Motivo de Oração</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="motivos-oracao-table">
+                                <thead>
+                                    <tr>
+                                        <th>Motivo de Oração</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="2">Selecione um relógio para ver os motivos de oração.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+    
+                    <!-- Seção do Quadro Tito -->
+                <section id="tito-section" class="admin-section">
+                    <h3>Gerenciar Quadro Tito & Post-its</h3>
 
-            <!-- Seção de Missionários (Exemplo) -->
-            <section class="admin-section">
-                <h3>Gerenciar Missionários</h3>
-                <button class="btn btn-add" data-section="missionaries">Adicionar Missionário</button>
-                 <div class="table-wrapper">
-                    <table class="admin-table" id="missionaries-table">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>País</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Conteúdo carregado via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                        <div class="form-group" style="margin-bottom: 0; flex-grow: 1; min-width: 250px;">
+                            <label for="quadro-select">Selecione um Quadro</label>
+                            <select id="quadro-select" name="quadro-select" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"></select>
+                        </div>
+                        <div id="quadro-buttons" style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" id="btn-edit-quadro" style="display: none;">Editar Quadro</button>
+                            <button class="btn btn-dark" id="btn-add-quadro">Cadastrar Quadro</button>
+                        </div>
+                    </div>
 
-            <!-- Seção do Relógio de Oração (Exemplo) -->
-            <section class="admin-section">
-                <h3>Gerenciar Relógio de Oração</h3>
-                <button class="btn btn-add" data-section="prayer-clock">Adicionar Voluntário</button>
-                <div class="table-wrapper">
-                    <table class="admin-table" id="prayer-clock-table">
-                        <thead>
-                            <tr>
-                                <th>Horário</th>
-                                <th>Nome do Voluntário</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Conteúdo carregado via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;">
 
-            <!-- Seção do Quadro Tito -->
-            <section class="admin-section">
-                <h3>Gerenciar Quadros de Tito</h3>
-                <button class="btn btn-add" data-section="quadros">Adicionar Quadro</button>
-                <div class="table-wrapper">
-                    <table class="admin-table" id="quadros-table">
-                        <thead>
-                            <tr>
-                                <th>Título do Quadro</th>
-                                <th>Data Inicial</th>
-                                <th>Data Final</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Conteúdo carregado via JS -->
-                        </tbody>
-                    </table>
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">POST-ITS</h4>
+                    </div>
+                    <div style="text-align: right; margin-bottom: 25px;">
+                        <button class="btn btn-add" data-section="postits" id="btn-add-postit" disabled>Adicionar Post-it</button>
+                    </div>
+                        <div class="table-wrapper">
+                        <table class="admin-table" id="postits-table">
+                                <thead>
+                                    <tr>
+                                    <th>Conteúdo</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <tr><td colspan="2">Selecione um quadro para ver os post-its.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
-            </section>
-
-            <section class="admin-section">
-                <h3>Gerenciar Post-its</h3>
-                <button class="btn btn-add" data-section="postits">Adicionar Post-it</button>
-                <div class="table-wrapper">
-                    <table class="admin-table" id="postits-table">
-                        <thead>
-                            <tr>
-                                <th>Conteúdo</th>
-                                <th>Quadro Associado</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Conteúdo carregado via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            </div>
         </div>
     </main>
 

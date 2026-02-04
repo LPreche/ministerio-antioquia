@@ -110,10 +110,6 @@ function setupMissionaryModal() {
     }
 
     modalCloseBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', e => e.target === modal && closeModal());
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && modal.classList.contains('is-visible')) closeModal();
-    });
 }
 
 async function setupPrayerClock() {
@@ -269,33 +265,52 @@ function setupNewsModal() {
     // Usando Event Delegation para funcionar com elementos criados dinamicamente
     document.addEventListener('click', (e) => {
         const card = e.target.closest('.news-card');
-        if (card) { // ntc_titulo, ntc_data_publicacao, ntc_corpo_mensagem, ntc_imagem_fundo
-            const ntc_titulo = card.dataset.ntc_titulo;
-            const ntc_data_publicacao = card.dataset.ntc_data_publicacao;
-            const ntc_imagem_fundo = card.dataset.ntc_imagem_fundo;
-            const ntc_corpo_mensagem = card.dataset.ntc_corpo_mensagem;
+        if (!card) return;
 
-            modalTitle.textContent = ntc_titulo;
-            modalFullStory.innerHTML = ntc_corpo_mensagem; // Use innerHTML para interpretar tags HTML como <p>
-
-            if (ntc_data_publicacao) {
-                modalDate.textContent = `Publicado em: ${ntc_data_publicacao}`;
-                modalDate.style.display = 'block';
-            } else {
-                modalDate.style.display = 'none';
-            }
-
-            if (ntc_imagem_fundo) {
-                modalImg.src = ntc_imagem_fundo;
-                modalImg.alt = `Imagem para: ${ntc_titulo}`;
-                modalImg.style.display = 'block';
-            } else {
-                modalImg.style.display = 'none';
-            }
-
-            modal.classList.add('is-visible');
-            body.classList.add('modal-open');
+        const newsId = card.dataset.id_noticia;
+        if (!newsId) {
+            console.error('ID da notícia não encontrado no card.');
+            return;
         }
+
+        // Busca os detalhes completos da notícia ao abrir o modal
+        fetch(`/api/noticias/${newsId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch news details');
+                return response.json();
+            })
+            .then(item => {
+                modalTitle.textContent = item.ntc_titulo;
+                modalFullStory.innerHTML = item.ntc_corpo_mensagem; // Isso renderizará o HTML corretamente
+
+                let dataFormatada = '';
+                if (item.ntc_data_publicacao) {
+                    const data = new Date(item.ntc_data_publicacao);
+                    dataFormatada = data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+                }
+
+                if (dataFormatada) {
+                    modalDate.textContent = `Publicado em: ${dataFormatada}`;
+                    modalDate.style.display = 'block';
+                } else {
+                    modalDate.style.display = 'none';
+                }
+
+                if (item.ntc_imagem_fundo) {
+                    modalImg.src = item.ntc_imagem_fundo;
+                    modalImg.alt = `Imagem para: ${item.ntc_titulo}`;
+                    modalImg.style.display = 'block';
+                } else {
+                    modalImg.style.display = 'none';
+                }
+
+                modal.classList.add('is-visible');
+                body.classList.add('modal-open');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar detalhes da notícia:', error);
+                alert('Não foi possível carregar os detalhes da notícia.');
+            });
     });
 
     function closeModal() {
@@ -304,12 +319,6 @@ function setupNewsModal() {
     }
 
     modalCloseBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', e => {
-        if (e.target === modal) {
-            closeModal();
-        }
-    });
-    document.addEventListener('keydown', e => e.key === 'Escape' && modal.classList.contains('is-visible') && closeModal());
 }
 
 function setupBackToTopButton() {
@@ -389,8 +398,6 @@ function setupContactForm() {
 
     closeBtn.addEventListener('click', closeModal);
     closeBtn2.addEventListener('click', closeModal);
-    modal.addEventListener('click', e => e.target === modal && closeModal());
-    document.addEventListener('keydown', e => e.key === 'Escape' && modal.classList.contains('is-visible') && closeModal());
 }
 
 function setupPixModal() {
@@ -415,16 +422,6 @@ function setupPixModal() {
 
     openBtn.addEventListener('click', openModal);
     closeBtn.addEventListener('click', closeModal);
-    pixModal.addEventListener('click', e => {
-        if (e.target === pixModal) {
-            closeModal();
-        }
-    });
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && pixModal.classList.contains('is-visible')) {
-            closeModal();
-        }
-    });
 }
 
 function setupPixCopy() {
@@ -494,11 +491,8 @@ async function loadNews() {
             // 3. Criar Elemento HTML
             const card = document.createElement('div');
             card.className = 'news-card animate-on-scroll is-visible'; // Adiciona is-visible para aparecer imediatamente
-            // Dados para o Modal // ntc_titulo, ntc_data_publicacao, ntc_imagem_fundo, ntc_corpo_mensagem
-            card.dataset.ntc_titulo = noticia.ntc_titulo;
-            card.dataset.ntc_data_publicacao = dataFormatada;
-            card.dataset.ntc_imagem_fundo = noticia.ntc_imagem_fundo;
-            card.dataset.ntc_corpo_mensagem = noticia.ntc_corpo_mensagem;
+            // Armazena apenas o ID no card para buscar os detalhes completos ao clicar
+            card.dataset.id_noticia = noticia.id_noticia;
 
             card.innerHTML = `
                 <div class="news-card-img-wrapper">
@@ -576,19 +570,46 @@ async function loadMissionaries() {
 }
 
 async function loadTitusBoard() {
-    const titusGrid = document.querySelector('.titus-board-grid');
-    if (!titusGrid) return; // Só executa na página do quadro
+    const titusBoard = document.querySelector('.titus-board');
+    if (!titusBoard) return; // Só executa na página do quadro
+
+    const titusGrid = titusBoard.querySelector('.titus-board-grid');
+    if (!titusGrid) return;
 
     try {
-        // Esta chamada agora busca apenas os post-its ativos (filtrados por data no backend)
         const response = await fetch('/api/tito');
         if (!response.ok) throw new Error('Erro na resposta da API');
         
-        const postIts = await response.json();
+        const { board, postIts } = await response.json();
         titusGrid.innerHTML = ''; // Limpa conteúdo
 
-        if (postIts.length === 0) {
+        // Remove o display de período anterior, se houver
+        const existingPeriodDisplay = document.querySelector('.titus-period-container');
+        if (existingPeriodDisplay) {
+            existingPeriodDisplay.remove();
+        }
+
+        if (!board) {
             titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Não há ensinamentos ativos no quadro no momento.</p>';
+            return;
+        }
+
+        // Exibe o período do quadro do lado de fora
+        const formatDate = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            // Adjust for timezone to show the correct local date
+            return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        };
+        const periodContainer = document.createElement('div');
+        periodContainer.className = 'titus-period-container';
+        periodContainer.style.textAlign = 'center';
+        periodContainer.style.marginBottom = '30px';
+        periodContainer.innerHTML = `<div class="titus-period-display"><strong>Período ativo:</strong> ${formatDate(board.qdt_data_inicial)} a ${formatDate(board.qdt_data_final)}</div>`;
+        titusBoard.parentNode.insertBefore(periodContainer, titusBoard);
+
+        if (postIts.length === 0) {
+            titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Nenhum post-it cadastrado para este período.</p>';
             return;
         }
 
@@ -597,19 +618,17 @@ async function loadTitusBoard() {
             const card = document.createElement('div');
             card.className = `post-it ${colorClass}`;
             
-            // Conteúdo do post-it sem a referência
             card.innerHTML = `
                 <p class="post-it-text">${postIt.pst_conteudo}</p>
             `;
             titusGrid.appendChild(card);
         });
 
-        // Força a re-animação se o quadro já estiver visível na carga da página
-        const board = document.querySelector('.titus-board');
-        if (board && board.classList.contains('is-visible')) {
+        // Força a re-animação se o quadro já estiver visível
+        if (titusBoard.classList.contains('is-visible')) {
             // Um pequeno truque para reiniciar a animação em cascata
-            board.classList.remove('is-visible');
-            setTimeout(() => board.classList.add('is-visible'), 50);
+            titusBoard.classList.remove('is-visible');
+            setTimeout(() => titusBoard.classList.add('is-visible'), 50);
         }
 
     } catch (error) {
@@ -640,14 +659,6 @@ function setupTitusWarningModal() {
     }
 
     okBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', e => {
-        if (e.target === modal) {
-            closeModal();
-        }
-    });
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && modal.classList.contains('is-visible')) closeModal();
-    });
 }
 
 function setupAdminRedirect() {
