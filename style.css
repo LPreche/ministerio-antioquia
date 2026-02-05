@@ -184,17 +184,31 @@ main {
     padding: 20px 0;
 }
 
-.hero {
-    background: var(--symbol-color);
-    color: var(--primary-color);
-    text-align: center;
-    margin-bottom: 30px;
-    padding: 5vh 20px; /* Adiciona um padding vertical proporcional */
-    min-height: 45vh; /* Garante uma altura mínima proporcional à tela */
+/* Garante que as seções principais da home tenham a mesma altura e conteúdo centralizado */
+.hero,
+#about-section,
+.events-section,
+.donation-section {
     display: flex;
-    align-items: center; /* Centraliza o conteúdo verticalmente */
-    justify-content: center; /* Centraliza o conteúdo horizontalmente */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 80px 20px; /* Espaçamento vertical generoso entre as seções */
 }
+
+.hero {
+    /* Adiciona uma imagem de fundo com um overlay escuro para legibilidade */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('imagens/hero-background.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Adiciona o efeito parallax */
+    color: var(--card-bg); /* Muda a cor do texto para branco para melhor contraste */
+    text-align: center;
+    position: relative;
+    padding: 120px 20px; /* Aumenta o padding para dar mais espaço à imagem */
+}
+
 
 .hero h2 {
     font-size: 2.5rem;
@@ -225,8 +239,9 @@ main {
 }
 
 .hero .btn {
-    background: var(--primary-color);
-    color: var(--card-bg);
+    /* Estilo do botão com mais destaque sobre a imagem */
+    background: var(--symbol-color);
+    color: var(--primary-color);
 }
 
 .btn-primary {

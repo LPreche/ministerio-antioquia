@@ -7,11 +7,11 @@ const crypto = require('crypto');
 const app = express();
 const port = 3000;
 
-// Middleware para logar todas as requisições recebidas
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] Requisição recebida: ${req.method} ${req.url}`);
-    next();
-});
+// // Middleware para logar todas as requisições recebidas
+// app.use((req, res, next) => {
+//     console.log(`[${new Date().toISOString()}] Requisição recebida: ${req.method} ${req.url}`);
+//     next();
+// });
 
 // Serve os arquivos estáticos (HTML, CSS, JS, Imagens)
 app.use(express.static(path.join(__dirname, '.')));
