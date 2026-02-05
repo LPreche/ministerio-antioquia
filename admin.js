@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Se você adicionar um botão de logout no seu admin.html com id="logout-btn", este código irá funcionar.
     const logoutBtn = document.getElementById('logout-btn');
 
+    // --- HELPER PARA ESCAPAR ATRIBUTOS HTML ---
+    function escapeAttr(text) {
+        if (typeof text !== 'string') return text;
+        return text.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     // --- TAB NAVIGATION LOGIC ---
     function showSection(index) {
         const sections = document.querySelectorAll('.admin-sections-wrapper > .admin-section');
@@ -41,8 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Load initial data
         loadAdminNews();
         loadAdminMissionaries();
+        loadAdminEvents();
         loadAdminRelogios();
         loadAdminTito(); // Nova função para a seção unificada
+        loadGeneralSettings();
         showSection(0); // Initialize to the first tab
     }
 
@@ -109,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const date = new Date(item.ntc_data_publicacao).toLocaleDateString('pt-BR');
                 const row = `
                     <tr data-id="${item.id_noticia}">
-                        <td data-label="Título">${item.ntc_titulo}</td>
+                        <td data-label="Título" class="truncate-cell" title="${escapeAttr(item.ntc_titulo)}">${item.ntc_titulo}</td>
                         <td data-label="Data">${date}</td>
                         <td data-label="Ações">
                             <button class="btn-edit" data-id="${item.id_noticia}" data-section="news">Editar</button>
@@ -137,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
             items.forEach(item => {
                 const row = `
                     <tr data-id="${item.id_missionario}">
-                        <td data-label="Nome">${item.nome}</td>
+                        <td data-label="Nome" class="truncate-cell" title="${escapeAttr(item.nome)}">${item.nome}</td>
                         <td data-label="País">${item.mis_pais}</td>
                         <td data-label="Ações">
                             <button class="btn-edit" data-id="${item.id_missionario}" data-section="missionaries">Editar</button>
@@ -150,6 +158,46 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error loading missionaries for admin:', error);
             document.querySelector('#missionaries-table tbody').innerHTML = `<tr><td colspan="3">Falha ao carregar missionários.</td></tr>`;
+        }
+    }
+
+    async function loadAdminEvents() {
+        try {
+            const response = await fetch('/api/eventos');
+            if (!response.ok) throw new Error('Failed to fetch events');
+            const items = await response.json();
+            
+            const tableBody = document.querySelector('#events-table tbody');
+            tableBody.innerHTML = '';
+
+            const formatDate = (dateString) => {
+                if (!dateString) return 'N/A';
+                const date = new Date(dateString);
+                return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR');
+            };
+
+            if (items.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4">Nenhum evento cadastrado.</td></tr>';
+                return;
+            }
+
+            items.forEach(item => {
+                const row = `
+                    <tr data-id="${item.id_evento}">
+                        <td data-label="Título" class="truncate-cell" title="${escapeAttr(item.evt_titulo)}">${item.evt_titulo}</td>
+                        <td data-label="Data Início">${formatDate(item.evt_data_inicial)}</td>
+                        <td data-label="Data Fim">${formatDate(item.evt_data_final)}</td>
+                        <td data-label="Ações">
+                            <button class="btn-edit" data-id="${item.id_evento}" data-section="events">Editar</button>
+                            <button class="btn-delete" data-id="${item.id_evento}" data-section="events">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        } catch (error) {
+            console.error('Error loading events for admin:', error);
+            document.querySelector('#events-table tbody').innerHTML = `<tr><td colspan="4">Falha ao carregar eventos.</td></tr>`;
         }
     }
 
@@ -177,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const row = `
                         <tr data-id="${item.id_voluntario}">
                             <td data-label="Horário">${String(hour).padStart(2, '0')}:00</td>
-                            <td data-label="Nome do Voluntário">${item.vol_nome_completo}</td>
+                            <td data-label="Nome do Voluntário" class="truncate-cell" title="${escapeAttr(item.vol_nome_completo)}">${item.vol_nome_completo}</td>
                             <td data-label="Ações">
                                 ${actionsHtml}
                             </td>
@@ -213,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const row = `
                         <tr data-id="${item.id_motivo}">
-                            <td data-label="Motivo de Oração">${item.mot_descricao}</td>
+                            <td data-label="Motivo de Oração" class="truncate-cell" title="${escapeAttr(item.mot_descricao)}">${item.mot_descricao}</td>
                             <td data-label="Ações">
                                 ${actionsHtml}
                             </td>
@@ -418,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 items.forEach(item => {
                     const row = `
                         <tr data-id="${item.id_postit}">
-                            <td data-label="Conteúdo">${item.pst_conteudo}</td>
+                            <td data-label="Conteúdo" class="truncate-cell" title="${escapeAttr(item.pst_conteudo)}">${item.pst_conteudo}</td>
                             <td data-label="Ações">
                                 <button class="btn-edit" data-id="${item.id_postit}" data-section="postits">Editar</button>
                                 <button class="btn-delete" data-id="${item.id_postit}" data-section="postits">Excluir</button>
@@ -485,6 +533,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function loadGeneralSettings() {
+        const settingsSection = document.getElementById('general-section');
+        if (!settingsSection) return;
+    
+        try {
+            const response = await fetch('/api/configuracoes');
+            if (!response.ok) throw new Error('Failed to fetch settings');
+            const settings = await response.json();
+    
+            document.getElementById('cfg_pix_ativo').checked = settings.cfg_pix_ativo;
+            document.getElementById('cfg_manutencao_noticias').checked = settings.cfg_manutencao_noticias;
+            document.getElementById('cfg_manutencao_relogio').checked = settings.cfg_manutencao_relogio;
+            document.getElementById('cfg_manutencao_quadrotito').checked = settings.cfg_manutencao_quadrotito;
+    
+        } catch (error) {
+            console.error('Error loading general settings:', error);
+            settingsSection.innerHTML = '<p>Falha ao carregar configurações.</p>';
+        }
+    }
+    
+    async function handleGeneralSettingsSave() {
+        const saveBtn = document.getElementById('save-general-settings');
+        const statusEl = document.getElementById('settings-save-status');
+        
+        const settings = {
+            cfg_pix_ativo: document.getElementById('cfg_pix_ativo').checked,
+            cfg_manutencao_noticias: document.getElementById('cfg_manutencao_noticias').checked,
+            cfg_manutencao_relogio: document.getElementById('cfg_manutencao_relogio').checked,
+            cfg_manutencao_quadrotito: document.getElementById('cfg_manutencao_quadrotito').checked,
+        };
+    
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+        statusEl.textContent = '';
+    
+        try {
+            const response = await fetch('/api/configuracoes', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+    
+            if (!response.ok) throw new Error((await response.json()).error || 'Erro no servidor');
+    
+            statusEl.style.color = 'green';
+            statusEl.textContent = 'Configurações salvas com sucesso!';
+    
+        } catch (error) {
+            statusEl.style.color = 'red';
+            statusEl.textContent = `Erro ao salvar: ${error.message}`;
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar Configurações';
+            setTimeout(() => { statusEl.textContent = ''; }, 4000);
+        }
+    }
+
     function initializeTinyMCE() {
         tinymce.init({
             selector: '#ntc_corpo_mensagem',
@@ -538,6 +643,12 @@ document.addEventListener('DOMContentLoaded', () => {
     adminDashboard.addEventListener('click', async (e) => {
         const target = e.target;
 
+        // Salvar Configurações Gerais
+        if (target.id === 'save-general-settings') {
+            handleGeneralSettingsSave();
+            return;
+        }
+
         // ADD Quadro
         if (target.id === 'btn-add-quadro') {
             const formHtml = `
@@ -567,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="hidden" name="id_quadro" value="${item.id_quadro}"> 
                     <div class="form-group"><label for="qdt_data_inicial">Data de Início</label><input type="date" id="qdt_data_inicial" name="qdt_data_inicial" value="${toInputDate(item.qdt_data_inicial)}" required></div>
                     <div class="form-group"><label for="qdt_data_final">Data de Fim</label><input type="date" id="qdt_data_final" name="qdt_data_final" value="${toInputDate(item.qdt_data_final)}" required></div>
-                    <div style="display: flex; justify-content: center; gap: 15px; align-items: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <div class="form-button-group" style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
                         <button type="button" id="btn-delete-quadro-modal" class="btn btn-delete">Excluir Quadro</button>
                         <button type="submit" class="btn btn-dark">Salvar Alterações</button>
                     </div>
@@ -615,7 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="hidden" name="id_relogio" value="${item.id_relogio}">
                     <div class="form-group"><label for="rel_titulo">Título do Relógio</label><input type="text" id="rel_titulo" name="rel_titulo" value="${item.rel_titulo}" required></div>
                     <div class="form-group"><label for="rel_data_relogio">Data do Relógio</label><input type="date" id="rel_data_relogio" name="rel_data_relogio" value="${toInputDate(item.rel_data_relogio)}" required></div>
-                    <div style="display: flex; justify-content: center; gap: 15px; align-items: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <div class="form-button-group" style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
                         <button type="button" id="btn-delete-relogio-modal" class="btn btn-delete">Excluir Relógio</button>
                         <button type="submit" class="btn btn-dark">Salvar Alterações</button>
                     </div>
@@ -696,6 +807,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 openFormModal('Adicionar Novo Missionário', formHtml, handleMissionarySubmit);
+            }
+            if (section === 'events') {
+                const formHtml = `
+                    <input type="hidden" name="id_evento" value=""> 
+                    <div class="form-group"><label for="evt_titulo">Título do Evento</label><input type="text" id="evt_titulo" name="evt_titulo" required></div>
+                    <div class="form-group"><label for="evt_descricao">Descrição</label><textarea id="evt_descricao" name="evt_descricao" rows="4"></textarea></div>
+                    <div class="form-group"><label for="evt_data_inicial">Data de Início</label><input type="date" id="evt_data_inicial" name="evt_data_inicial" required></div>
+                    <div class="form-group"><label for="evt_data_final">Data de Fim</label><input type="date" id="evt_data_final" name="evt_data_final" required></div>
+                    <div style="text-align: center; margin-top: 25px;">
+                        <button type="submit" class="btn btn-dark">Salvar Evento</button>
+                    </div>
+                `;
+                openFormModal('Adicionar Novo Evento', formHtml, handleEventSubmit);
             }
             if (section === 'prayer-clock') {
                 const relogioId = document.getElementById('relogio-select').value;
@@ -815,6 +939,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Não foi possível carregar os dados para edição.');
                 }
             }
+            if (section === 'events') {
+                try {
+                    const res = await fetch(`/api/eventos/${id}`);
+                    if (!res.ok) throw new Error('Event not found');
+                    const item = await res.json();
+                    const toInputDate = (d) => d ? new Date(d).toISOString().split('T')[0] : '';
+
+                    const formHtml = `
+                        <input type="hidden" name="id_evento" value="${item.id_evento}"> 
+                        <div class="form-group"><label for="evt_titulo">Título do Evento</label><input type="text" id="evt_titulo" name="evt_titulo" value="${escapeAttr(item.evt_titulo)}" required></div>
+                        <div class="form-group"><label for="evt_descricao">Descrição</label><textarea id="evt_descricao" name="evt_descricao" rows="4">${item.evt_descricao || ''}</textarea></div>
+                        <div class="form-group"><label for="evt_data_inicial">Data de Início</label><input type="date" id="evt_data_inicial" name="evt_data_inicial" value="${toInputDate(item.evt_data_inicial)}" required></div>
+                        <div class="form-group"><label for="evt_data_final">Data de Fim</label><input type="date" id="evt_data_final" name="evt_data_final" value="${toInputDate(item.evt_data_final)}" required></div>
+                        <div style="text-align: center; margin-top: 25px;">
+                            <button type="submit" class="btn btn-dark">Salvar Alterações</button>
+                        </div>
+                    `;
+                    openFormModal('Editar Evento', formHtml, handleEventSubmit);
+                } catch(error) {
+                    console.error('Error fetching event for edit:', error);
+                    alert('Não foi possível carregar os dados para edição.');
+                }
+            }
             if (section === 'prayer-clock') {
                 try {
                     const res = await fetch(`/api/voluntarios/${id}`);
@@ -897,6 +1044,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'missionaries':
                         url = `/api/missionaries/${id}`;
                         loadFunction = loadAdminMissionaries;
+                        break;
+                    case 'events':
+                        url = `/api/eventos/${id}`;
+                        loadFunction = loadAdminEvents;
                         break;
                     case 'prayer-clock':
                         url = `/api/voluntarios/${id}`;
@@ -988,6 +1139,32 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAdminMissionaries();
         } catch (error) {
             console.error('Error submitting missionary form:', error);
+            alert(`Erro ao salvar: ${error.message}`);
+        }
+    }
+
+    async function handleEventSubmit(e) {
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        const id = data.id_evento;
+        
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/eventos/${id}` : '/api/eventos';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro no servidor');
+            }
+            loadAdminEvents();
+        } catch (error) {
+            console.error('Error submitting event form:', error);
             alert(`Erro ao salvar: ${error.message}`);
         }
     }

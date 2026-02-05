@@ -1,6 +1,47 @@
 // Variável global para armazenar o agendamento (será preenchida pela API)
 let prayerSchedule = [];
 
+async function applyGlobalSettings() {
+    try {
+        const response = await fetch('/api/configuracoes');
+        if (!response.ok) return false;
+        const settings = await response.json();
+
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
+        // --- Maintenance Check ---
+        const maintenanceModal = document.getElementById('maintenance-modal');
+        let inMaintenance = false;
+        if (maintenanceModal) {
+            if (currentPage === 'noticias.html' && settings.cfg_manutencao_noticias) inMaintenance = true;
+            if (currentPage === 'relogio.html' && settings.cfg_manutencao_relogio) inMaintenance = true;
+            if (currentPage === 'quadro-tito.html' && settings.cfg_manutencao_quadrotito) inMaintenance = true;
+        }
+
+        if (inMaintenance) {
+            document.body.classList.add('modal-open', 'in-maintenance');
+            maintenanceModal.classList.add('is-visible');
+            return true; // Indica que a página está em manutenção
+        }
+
+        // --- PIX Control ---
+        if (currentPage === 'index.html') {
+            const pixCard = Array.from(document.querySelectorAll('.donation-card')).find(card => card.querySelector('.pix-key'));
+            if (pixCard) {
+                if (settings.cfg_pix_ativo) {
+                    pixCard.classList.remove('donation-card--disabled');
+                } else {
+                    pixCard.classList.add('donation-card--disabled');
+                }
+            }
+        }
+        return false; // Indica que a página NÃO está em manutenção
+    } catch (error) {
+        console.error('Could not apply global settings:', error);
+        return false; // Em caso de erro, prossegue normalmente
+    }
+}
+
 function updateFooter() {
     const yearElement = document.getElementById('current-year');
     if (yearElement) {
@@ -463,6 +504,125 @@ function setupPixCopy() {
     });
 }
 
+function setupCalendarExport() {
+    // Verifica se está em um dispositivo com capacidade de toque, um bom proxy para celular.
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (!isMobile) {
+        return; // Executa somente em dispositivos móveis.
+    }
+
+    const eventsGrid = document.querySelector('.events-grid');
+    if (!eventsGrid) return;
+
+    let pressTimer = null;
+
+    const startPress = (e) => {
+        const card = e.target.closest('.event-card');
+        if (!card) return;
+
+        // Inicia o timer de 2 segundos
+        pressTimer = window.setTimeout(() => {
+            pressTimer = null; // Limpa a referência do timer
+            showCalendarConfirmationModal(card); // Ação de long-press
+        }, 2000);
+    };
+
+    const cancelPress = () => {
+        clearTimeout(pressTimer);
+    };
+
+    // Usa delegação de eventos no container dos eventos
+    eventsGrid.addEventListener('touchstart', startPress, { passive: true });
+    eventsGrid.addEventListener('touchend', cancelPress);
+    eventsGrid.addEventListener('touchmove', cancelPress); // Cancela se o usuário começar a rolar
+}
+
+function showCalendarConfirmationModal(card) {
+    const modal = document.getElementById('calendar-modal');
+    const titleEl = document.getElementById('calendar-event-title');
+    const yesBtn = document.getElementById('calendar-btn-yes');
+    const closeBtn = modal.querySelector('.modal-close');
+    const body = document.body;
+
+    if (!modal || !titleEl || !yesBtn || !closeBtn) return;
+
+    // Pega os dados do evento armazenados no card
+    const eventTitle = card.dataset.evtTitle;
+    const eventDesc = card.dataset.evtDesc;
+    const eventStart = card.dataset.evtStart;
+    const eventEnd = card.dataset.evtEnd;
+
+    titleEl.textContent = eventTitle;
+
+    const closeModal = () => {
+        modal.classList.remove('is-visible');
+        body.classList.remove('modal-open');
+        // Limpa os listeners para evitar chamadas múltiplas
+        yesBtn.onclick = null;
+        closeBtn.onclick = null;
+    };
+
+    // Define as ações dos botões
+    yesBtn.onclick = () => {
+        generateIcsFile(eventTitle, eventDesc, eventStart, eventEnd);
+        closeModal();
+    };
+    closeBtn.onclick = closeModal;
+
+    // Exibe o modal
+    modal.classList.add('is-visible');
+    body.classList.add('modal-open');
+}
+
+function generateIcsFile(title, description, startDate, endDate) {
+    // Helper para formatar a data para o padrão iCal (YYYYMMDD)
+    const formatIcsDate = (dateString, isEnd = false) => {
+        const date = new Date(dateString);
+        // Corrige o fuso horário para garantir que a data não mude
+        const correctedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+        
+        if (isEnd) {
+            // Para eventos de dia inteiro, a data final (DTEND) deve ser o dia seguinte ao fim do evento.
+            correctedDate.setDate(correctedDate.getDate() + 1);
+        }
+
+        const year = correctedDate.getFullYear();
+        const month = String(correctedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(correctedDate.getDate()).padStart(2, '0');
+        
+        return `${year}${month}${day}`;
+    };
+
+    // Monta o conteúdo do arquivo .ics
+    const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//MovimentoAntioquia//Website//PT',
+        'BEGIN:VEVENT',
+        `UID:${Date.now()}@movimentoantioquia.com`,
+        `DTSTAMP:${new Date().toISOString().replace(/[-:.]/g, '')}`,
+        `DTSTART;VALUE=DATE:${formatIcsDate(startDate)}`,
+        `DTEND;VALUE=DATE:${formatIcsDate(endDate, true)}`,
+        `SUMMARY:${title}`,
+        `DESCRIPTION:${description.replace(/\n/g, '\\n')}`, // Escapa quebras de linha
+        'END:VEVENT',
+        'END:VCALENDAR'
+    ].join('\r\n');
+
+    // Cria um Blob e dispara o download
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    const filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
 async function loadNews() {
     const newsGrid = document.querySelector('.news-grid');
     if (!newsGrid) return; // Só executa na página de notícias
@@ -637,6 +797,100 @@ async function loadTitusBoard() {
     }
 }
 
+async function loadPublicEvents() {
+    const eventsGrid = document.querySelector('.events-grid');
+    if (!eventsGrid) return;
+
+    try {
+        const response = await fetch('/api/eventos');
+        if (!response.ok) throw new Error('Failed to fetch events');
+        let events = await response.json();
+
+        // Filtra por eventos futuros
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normaliza para o início do dia
+        events = events.filter(event => {
+            const eventEndDate = new Date(event.evt_data_final);
+            return eventEndDate >= today;
+        });
+
+        // Ordena por data de início
+        events.sort((a, b) => new Date(a.evt_data_inicial) - new Date(b.evt_data_inicial));
+
+        eventsGrid.innerHTML = ''; // Limpa conteúdo estático
+
+        if (events.length === 0) {
+            eventsGrid.innerHTML = '<p>Nenhum evento programado no momento.</p>';
+            return;
+        }
+
+        events.forEach((event, index) => {
+            const startDate = new Date(event.evt_data_inicial);
+            const endDate = new Date(event.evt_data_final);
+            
+            // Ajusta para o fuso horário para pegar a data local correta
+            const correctedStartDate = new Date(startDate.getTime() + startDate.getTimezoneOffset() * 60000);
+            const correctedEndDate = new Date(endDate.getTime() + endDate.getTimezoneOffset() * 60000);
+
+            const startDay = String(correctedStartDate.getDate()).padStart(2, '0');
+            const startMonth = correctedStartDate.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+            
+            const endDay = String(correctedEndDate.getDate()).padStart(2, '0');
+            const endMonth = correctedEndDate.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+
+            const isSameDay = correctedStartDate.toDateString() === correctedEndDate.toDateString();
+
+            let dateHtml = '';
+            if (isSameDay) {
+                dateHtml = `
+                    <div class="event-date">
+                        <span class="event-day">${startDay}</span>
+                        <span class="event-month">${startMonth}</span>
+                    </div>
+                `;
+            } else {
+                dateHtml = `
+                    <div class="event-date-range">
+                        <div class="event-date">
+                            <span class="event-day">${startDay}</span>
+                            <span class="event-month">${startMonth}</span>
+                        </div>
+                        <span class="date-separator">-</span>
+                        <div class="event-date">
+                            <span class="event-day">${endDay}</span>
+                            <span class="event-month">${endMonth}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'event-card';
+            if (index === 0) {
+                card.classList.add('event-card--next');
+            }
+            // Adiciona os dados do evento ao card para serem usados na exportação do calendário
+            card.dataset.evtTitle = event.evt_titulo;
+            card.dataset.evtDesc = event.evt_descricao || '';
+            card.dataset.evtStart = event.evt_data_inicial;
+            card.dataset.evtEnd = event.evt_data_final;
+
+            card.innerHTML = `
+                ${dateHtml}
+                <div class="event-details">
+                    <h4 class="event-title">${event.evt_titulo}</h4>
+                    <p class="event-description">${event.evt_descricao || ''}</p>
+                </div>
+            `;
+            eventsGrid.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error('Error loading public events:', error);
+        eventsGrid.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
+    }
+}
+
 function setupTitusWarningModal() {
     // Só executa na página do quadro tito
     if (!document.querySelector('.titus-board')) return;
@@ -687,18 +941,25 @@ function setupAdminRedirect() {
 }
 
 // --- Inicialização de todas as funções ---
-updateFooter();
-setupHamburgerMenu();
-setupScrollAnimations();
-setupMissionaryModal();
-setupBackToTopButton();
-setupNewsModal();
-setupPrayerClock();
-setupContactForm();
-setupPixModal();
-setupPixCopy();
-loadNews();
-loadMissionaries();
-loadTitusBoard();
-setupTitusWarningModal();
-setupAdminRedirect(); // Adiciona o listener para o redirecionamento secreto
+(async () => {
+    const inMaintenance = await applyGlobalSettings();
+    if (inMaintenance) return; // Para a execução do script se a página estiver em manutenção
+
+    updateFooter();
+    setupHamburgerMenu();
+    setupScrollAnimations();
+    setupMissionaryModal();
+    setupBackToTopButton();
+    setupNewsModal();
+    setupPrayerClock();
+    setupContactForm();
+    setupPixModal();
+    setupPixCopy();
+    setupCalendarExport(); // Adiciona a lógica para exportar para o calendário
+    loadNews();
+    loadMissionaries();
+    loadTitusBoard();
+    setupTitusWarningModal();
+    loadPublicEvents();
+    setupAdminRedirect(); // Adiciona o listener para o redirecionamento secreto
+})();

@@ -59,17 +59,7 @@
             <div class="container">
                 <h3>Próximos Eventos</h3>
                 <div class="events-grid">
-                    <div class="event-card">
-                        <div class="event-date">
-                            <span class="event-day">15</span>
-                            <span class="event-month">FEV</span>
-                        </div>
-                        <div class="event-details">
-                            <h4 class="event-title">Culto de Missões</h4>
-                            <p class="event-description">Um tempo especial de louvor, palavra e intercessão pelos nossos missionários e pelos povos não alcançados.</p>
-                        </div>
-                    </div>
-                    <!-- Outros eventos podem ser adicionados aqui no futuro -->
+                    <!-- Eventos serão carregados dinamicamente aqui -->
                 </div>
             </div>
         </section>
@@ -111,6 +101,19 @@
                 <img src="imagens/pix.png" alt="QR Code para doação PIX" id="pix-qr-code-img">
                 <p style="margin-top: 20px; font-weight: bold;">Ou use a chave:</p>
                 <p class="pix-key" style="background-color: #f4f4f4; text-align: center;">ministeriomissoes.ibicco@hotmail.com</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Adicionar ao Calendário -->
+    <div id="calendar-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 450px;">
+            <button class="modal-close" aria-label="Fechar">&times;</button>
+            <div class="modal-body centered-content">
+                <h3>Adicionar ao Calendário</h3>
+                <p>Deseja adicionar o evento "<span id="calendar-event-title"></span>" ao calendário do seu celular?</p>
+                <!-- O botão "Não" foi removido e o "Sim" foi renomeado e centralizado -->
+                <button id="calendar-btn-yes" class="btn btn-primary" style="margin-top: 20px;">Adicionar</button>
             </div>
         </div>
     </div>

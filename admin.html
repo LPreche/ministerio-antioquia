@@ -50,24 +50,56 @@
     <main id="admin-dashboard" style="display: none;">
         <div class="container">
             <div class="admin-tabs-nav">
-                <button class="admin-tab-btn active" data-target="news-section">Notícias</button>
+                <button class="admin-tab-btn active" data-target="general-section">Geral</button>
+                <button class="admin-tab-btn" data-target="events-section">Eventos</button>
                 <button class="admin-tab-btn" data-target="missionaries-section">Missionários</button>
                 <button class="admin-tab-btn" data-target="prayer-clock-section">Relógio de Oração</button>
                 <button class="admin-tab-btn" data-target="tito-section">Quadro Tito</button>
+                <button class="admin-tab-btn" data-target="news-section">Notícias</button>
             </div>
     
             <div class="admin-sections-container">
                 <div class="admin-sections-wrapper">
-                    <!-- Seção de Notícias -->
-                    <section id="news-section" class="admin-section">
-                        <h3>Gerenciar Notícias</h3>
-                        <button class="btn btn-add" data-section="news">Adicionar Notícia</button>
+                    <!-- Seção de Configurações Gerais -->
+                    <section id="general-section" class="admin-section">
+                        <h3>Configurações Gerais do Site</h3>
+
+                        <div class="settings-group">
+                            <h4>Doações</h4>
+                            <div class="setting-item">
+                                <label for="cfg_pix_ativo">Ativar doação por PIX na página inicial</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="cfg_pix_ativo" name="cfg_pix_ativo">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h4>Modo Manutenção</h4>
+                            <p>Quando ativado, os visitantes verão um aviso de "página em manutenção" em vez do conteúdo.</p>
+                            <div class="setting-item"><label for="cfg_manutencao_noticias">Página de Notícias</label><label class="switch"><input type="checkbox" id="cfg_manutencao_noticias" name="cfg_manutencao_noticias"><span class="slider round"></span></label></div>
+                            <div class="setting-item"><label for="cfg_manutencao_relogio">Página do Relógio de Oração</label><label class="switch"><input type="checkbox" id="cfg_manutencao_relogio" name="cfg_manutencao_relogio"><span class="slider round"></span></label></div>
+                            <div class="setting-item"><label for="cfg_manutencao_quadrotito">Página do Quadro Tito</label><label class="switch"><input type="checkbox" id="cfg_manutencao_quadrotito" name="cfg_manutencao_quadrotito"><span class="slider round"></span></label></div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 40px;">
+                            <button id="save-general-settings" class="btn btn-dark">Salvar Configurações</button>
+                            <p id="settings-save-status" style="margin-top: 10px; color: green;"></p>
+                        </div>
+                    </section>
+
+                    <!-- Seção de Eventos -->
+                    <section id="events-section" class="admin-section">
+                        <h3>Gerenciar Eventos</h3>
+                        <button class="btn btn-add" data-section="events">Adicionar Evento</button>
                         <div class="table-wrapper">
-                            <table class="admin-table" id="news-table">
+                            <table class="admin-table" id="events-table">
                                 <thead>
                                     <tr>
                                         <th>Título</th>
-                                        <th>Data</th>
+                                        <th>Data Início</th>
+                                        <th>Data Fim</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
@@ -97,7 +129,7 @@
                             </table>
                         </div>
                     </section>
-    
+
                     <!-- Seção do Relógio de Oração (Exemplo) -->
                     <section id="prayer-clock-section" class="admin-section">
                         <h3>Gerenciar Relógio de Oração</h3>
@@ -192,6 +224,26 @@
                                 </thead>
                                 <tbody>
                                 <tr><td colspan="2">Selecione um quadro para ver os post-its.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Seção de Notícias -->
+                    <section id="news-section" class="admin-section">
+                        <h3>Gerenciar Notícias</h3>
+                        <button class="btn btn-add" data-section="news">Adicionar Notícia</button>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="news-table">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Data</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Conteúdo carregado via JS -->
                                 </tbody>
                             </table>
                         </div>

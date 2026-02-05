@@ -225,6 +225,127 @@ app.delete('/api/missionaries/:id', isAuthenticated, async (req, res) => {
     }
 });
 
+// --- CRUD para Configurações Gerais ---
+
+// GET (Public): Retorna as configurações
+app.get('/api/configuracoes', async (req, res) => {
+    try {
+        const [rows] = await db.execute("SELECT cfg_pix_ativo, cfg_manutencao_noticias, cfg_manutencao_relogio, cfg_manutencao_quadrotito FROM configuracoes WHERE id = 1");
+        if (rows.length === 0) {
+            // Se por algum motivo a linha não existir, retorna um estado padrão seguro
+            return res.json({
+                cfg_pix_ativo: true,
+                cfg_manutencao_noticias: false,
+                cfg_manutencao_relogio: false,
+                cfg_manutencao_quadrotito: false
+            });
+        }
+        // Converte TINYINT(1) do banco (0 ou 1) para booleano para o frontend
+        const settings = {
+            cfg_pix_ativo: !!rows[0].cfg_pix_ativo,
+            cfg_manutencao_noticias: !!rows[0].cfg_manutencao_noticias,
+            cfg_manutencao_relogio: !!rows[0].cfg_manutencao_relogio,
+            cfg_manutencao_quadrotito: !!rows[0].cfg_manutencao_quadrotito,
+        };
+        res.json(settings);
+    } catch (error) {
+        console.error('Erro ao buscar configurações:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar configurações' });
+    }
+});
+
+// PUT (Admin): Atualiza as configurações
+app.put('/api/configuracoes', isAuthenticated, async (req, res) => {
+    try {
+        const { cfg_pix_ativo, cfg_manutencao_noticias, cfg_manutencao_relogio, cfg_manutencao_quadrotito } = req.body;
+
+        await db.execute(
+            'UPDATE configuracoes SET cfg_pix_ativo = ?, cfg_manutencao_noticias = ?, cfg_manutencao_relogio = ?, cfg_manutencao_quadrotito = ? WHERE id = 1',
+            [
+                cfg_pix_ativo,
+                cfg_manutencao_noticias,
+                cfg_manutencao_relogio,
+                cfg_manutencao_quadrotito
+            ]
+        );
+        res.json({ message: 'Configurações atualizadas com sucesso' });
+    } catch (error) {
+        console.error('Erro ao atualizar configurações:', error);
+        res.status(500).json({ error: 'Erro interno ao atualizar configurações' });
+    }
+});
+
+// --- CRUD para Eventos ---
+
+// GET (Public): Retorna todos os eventos
+app.get('/api/eventos', async (req, res) => {
+    try {
+        // Admin precisa de todos os eventos, a página pública irá filtrar. Ordenado pela data de início mais recente.
+        const [rows] = await db.execute("SELECT id_evento, evt_titulo, evt_descricao, evt_data_inicial, evt_data_final FROM eventos ORDER BY evt_data_inicial DESC");
+        res.json(rows);
+    } catch (error) {
+        console.error('Erro ao buscar eventos:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar eventos' });
+    }
+});
+
+// GET um por ID (para edição)
+app.get('/api/eventos/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await db.execute('SELECT id_evento, evt_titulo, evt_descricao, evt_data_inicial, evt_data_final FROM eventos WHERE id_evento = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Evento não encontrado' });
+        }
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Erro ao buscar evento por ID:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar evento' });
+    }
+});
+
+// POST (criar)
+app.post('/api/eventos', isAuthenticated, async (req, res) => {
+    try {
+        const { evt_titulo, evt_descricao, evt_data_inicial, evt_data_final } = req.body;
+        const [result] = await db.execute(
+            'INSERT INTO eventos (evt_titulo, evt_descricao, evt_data_inicial, evt_data_final) VALUES (?, ?, ?, ?)',
+            [evt_titulo, evt_descricao, evt_data_inicial, evt_data_final]
+        );
+        res.status(201).json({ id: result.insertId, ...req.body });
+    } catch (error) {
+        console.error('Erro ao adicionar evento:', error);
+        res.status(500).json({ error: 'Erro interno ao adicionar evento' });
+    }
+});
+
+// PUT (atualizar)
+app.put('/api/eventos/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { evt_titulo, evt_descricao, evt_data_inicial, evt_data_final } = req.body;
+        await db.execute(
+            'UPDATE eventos SET evt_titulo = ?, evt_descricao = ?, evt_data_inicial = ?, evt_data_final = ? WHERE id_evento = ?',
+            [evt_titulo, evt_descricao, evt_data_inicial, evt_data_final, id]
+        );
+        res.json({ message: 'Evento atualizado com sucesso' });
+    } catch (error) {
+        console.error('Erro ao atualizar evento:', error);
+        res.status(500).json({ error: 'Erro interno ao atualizar evento' });
+    }
+});
+
+// DELETE
+app.delete('/api/eventos/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.execute('DELETE FROM eventos WHERE id_evento = ?', [id]);
+        res.status(204).send();
+    } catch (error) {
+        console.error('Erro ao deletar evento:', error);
+        res.status(500).json({ error: 'Erro interno ao deletar evento' });
+    }
+});
 
 // --- CRUD para Voluntários do Relógio de Oração ---
 

@@ -104,6 +104,17 @@ p.subtitle-script {
     }
 }
 
+@keyframes fadeInScaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 nav {
     display: flex;
     justify-content: center;
@@ -202,24 +213,51 @@ main {
     background-image: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('imagens/hero-background.png');
     background-size: cover;
     background-position: center;
-    background-attachment: fixed; /* Adiciona o efeito parallax */
     color: var(--card-bg); /* Muda a cor do texto para branco para melhor contraste */
     text-align: center;
     position: relative;
-    padding: 120px 20px; /* Aumenta o padding para dar mais espaço à imagem */
+    height: 100dvh; /* Usa a altura dinâmica da viewport para se ajustar perfeitamente, especialmente em celulares */
+    /* Remove o padding vertical herdado para evitar que a altura ultrapasse 100vh.
+       A centralização vertical do conteúdo já é feita pelo 'justify-content: center' do flexbox. */
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
+.hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.15); /* Overlay sutil que escurece um pouco mais */
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 1; /* Garante que o overlay fique acima da imagem de fundo */
+}
+
+.hero:hover::after {
+    opacity: 1;
+}
 
 .hero h2 {
     font-size: 2.5rem;
     margin-bottom: 20px;
     font-family: var(--font-script);
+    position: relative; z-index: 2; /* Garante que o texto fique acima do overlay do hover */
+    /* Animação */
+    opacity: 0;
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
 }
 
 .hero p {
     font-size: 1.1rem;
     max-width: 600px;
     margin: 0 auto 30px;
+    position: relative; z-index: 2; /* Garante que o texto fique acima do overlay do hover */
+    /* Animação */
+    opacity: 0;
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.8s forwards;
 }
 
 .btn {
@@ -242,6 +280,10 @@ main {
     /* Estilo do botão com mais destaque sobre a imagem */
     background: var(--symbol-color);
     color: var(--primary-color);
+    position: relative; z-index: 2; /* Garante que o botão fique acima do overlay do hover */
+    /* Animação */
+    opacity: 0;
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1.1s forwards;
 }
 
 .btn-primary {
@@ -801,6 +843,12 @@ body.modal-open {
     opacity: 1;
 }
 
+#maintenance-modal.is-visible .modal-content,
+#calendar-modal.is-visible .modal-content {
+    /* Sobrescreve a animação padrão de 'slide up' para um 'fade in com scale' */
+    animation: fadeInScaleUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
 .modal-close {
     position: absolute;
     top: 5px;
@@ -1191,7 +1239,7 @@ body.modal-open {
 
 .events-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr; /* Altera para uma única coluna */
     gap: 25px;
     margin-top: 20px;
 }
@@ -1205,11 +1253,20 @@ body.modal-open {
     border-radius: 8px;
     border-left: 5px solid var(--symbol-color);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Padrão */
+    -webkit-touch-callout: none; /* Impede o menu de contexto no iOS */
+    cursor: pointer; /* Indica que o card é clicável/interativo */
 }
 
 .event-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.event-card--next {
+    background-color: #fff9e3; /* Amarelo claro para destaque sutil */
 }
 
 .event-date {
@@ -1237,6 +1294,19 @@ body.modal-open {
     line-height: 1;
 }
 
+.event-date-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.event-date-range .date-separator {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
 .event-title {
     margin: 0 0 5px 0;
     font-size: 1.3rem;
@@ -1249,6 +1319,14 @@ body.modal-open {
     margin: 0;
     font-size: 0.95rem;
     color: var(--text-color);
+}
+
+/* Ajuste para telas pequenas */
+@media (max-width: 600px) {
+    .event-card {
+        flex-direction: column;
+        text-align: center;
+    }
 }
 
 /* --- Seção de Doação --- */
@@ -1350,8 +1428,9 @@ body.modal-open {
     padding: 10px 15px;
     border-radius: 5px;
     font-weight: bold;
-    word-wrap: break-word;
+    overflow-wrap: break-word; /* Garante a quebra de palavras longas */
     margin: 0 !important;
+    word-break: break-all; /* Força a quebra de strings sem espaços, como e-mails */
     flex-grow: 1;
     cursor: pointer;
     transition: transform 0.1s ease;
@@ -1667,6 +1746,14 @@ body.modal-open {
     text-align: left;
 }
 
+.admin-table td.truncate-cell {
+    max-width: 250px; /* Largura máxima antes de truncar. Ajuste conforme necessário. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle; /* Alinha o texto verticalmente caso as linhas tenham alturas diferentes */
+}
+
 .admin-table th {
     background-color: #f2f2f2;
     font-weight: 600;
@@ -1707,6 +1794,13 @@ body.modal-open {
     background-color: #8c3836;
 }
 
+/* Garante que o botão de deletar dentro de um modal se pareça com os outros botões principais */
+#form-modal .btn-delete {
+    padding: 12px 25px;
+    border-radius: 30px;
+    border: none; /* Garante que não haja borda extra */
+}
+
 #form-modal .modal-body {
     flex-direction: column;
     align-items: stretch;
@@ -1732,4 +1826,80 @@ body.modal-open {
         width: 55px;
         height: 55px;
     }
+}
+
+/* --- Estilos para a Seção de Configurações Gerais (Admin) --- */
+
+.settings-group {
+    margin-bottom: 35px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #eee;
+}
+
+.settings-group:last-of-type {
+    border-bottom: none;
+}
+
+.settings-group h4 {
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 10px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+}
+
+.setting-item:not(:last-child) {
+    margin-bottom: 10px;
+}
+
+.setting-item:hover {
+    background-color: #f9f9f9;
+}
+
+.setting-item label:first-child {
+    font-weight: 500;
+}
+
+/* The switch - a checkbox disguised as a toggle */
+.switch { position: relative; display: inline-block; width: 60px; height: 34px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+.slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
+input:checked + .slider { background-color: var(--primary-color); }
+input:focus + .slider { box-shadow: 0 0 1px var(--primary-color); }
+input:checked + .slider:before { transform: translateX(26px); }
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }
+
+/* --- Estilos para o Modal de Manutenção --- */
+body.in-maintenance > header,
+body.in-maintenance > main,
+body.in-maintenance > footer {
+    filter: blur(5px);
+    transition: filter 0.3s ease-in-out;
+    pointer-events: none; /* Impede a interação com o fundo desfocado */
+}
+
+#maintenance-modal .modal-content {
+    text-align: center;
+    transform: scale(0.95); /* Estado inicial para a animação de scale */
+}
+
+#maintenance-modal h3 {
+    font-family: var(--font-handwritten); /* Alterado para a fonte 'Kalam' */
+    font-size: 2.5rem; /* Aumentado um pouco para a nova fonte */
+    color: var(--primary-color);
+}
+
+#maintenance-modal .maintenance-icon {
+    width: 120px; /* Aumentado de 80px */
+    margin-bottom: 20px;
 }
