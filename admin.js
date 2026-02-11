@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminFooter = document.getElementById('admin-footer');
     const adminTabsNav = document.querySelector('.admin-tabs-nav');
     const adminSectionsWrapper = document.querySelector('.admin-sections-wrapper');
+    const adminMobileNavSelect = document.getElementById('admin-section-select');
     // Se você adicionar um botão de logout no seu admin.html com id="logout-btn", este código irá funcionar.
     const logoutBtn = document.getElementById('logout-btn');
 
@@ -24,6 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tabButtons.forEach((btn, i) => btn.classList.toggle('active', i === index));
         adminSectionsWrapper.style.transform = `translateX(-${index * 100}%)`;
+
+        // Sincroniza o select do menu mobile com a aba ativa
+        if (adminMobileNavSelect) {
+            const sectionId = sections[index].id;
+            adminMobileNavSelect.value = sectionId;
+        }
     }
 
     if (adminTabsNav) {
@@ -34,6 +41,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetId = targetBtn.dataset.target;
             const targetIndex = Array.from(sections).findIndex(section => section.id === targetId);
             if (targetIndex !== -1) showSection(targetIndex);
+        });
+    }
+
+    // --- LOGIC FOR MOBILE SELECT NAVIGATION ---
+    if (adminMobileNavSelect) {
+        adminMobileNavSelect.addEventListener('change', (e) => {
+            const sections = document.querySelectorAll('.admin-sections-wrapper > .admin-section');
+            const targetId = e.target.value;
+            const targetIndex = Array.from(sections).findIndex(section => section.id === targetId);
+            if (targetIndex !== -1) {
+                showSection(targetIndex);
+            }
         });
     }
 
@@ -51,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAdminRelogios();
         loadAdminTito(); // Nova função para a seção unificada
         loadGeneralSettings();
+        setupPushNotificationForm(); // Adiciona o listener para o novo formulário
         showSection(0); // Initialize to the first tab
     }
 
@@ -553,6 +573,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    async function handlePushNotificationSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const sendBtn = document.getElementById('send-push-btn');
+        const statusEl = document.getElementById('push-status');
+    
+        const data = {
+            title: form.title.value,
+            body: form.body.value,
+            url: form.url.value || '/'
+        };
+    
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Enviando...';
+        statusEl.textContent = '';
+    
+        try {
+            const response = await fetch('/api/send-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+    
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Erro no servidor');
+    
+            statusEl.style.color = 'green';
+            statusEl.textContent = result.message || 'Notificação enviada com sucesso!';
+            form.reset();
+    
+        } catch (error) {
+            statusEl.style.color = 'red';
+            statusEl.textContent = `Erro ao enviar: ${error.message}`;
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Enviar Notificação';
+            setTimeout(() => { statusEl.textContent = ''; }, 5000);
+        }
+    }
     async function handleGeneralSettingsSave() {
         const saveBtn = document.getElementById('save-general-settings');
         const statusEl = document.getElementById('settings-save-status');
@@ -587,6 +646,13 @@ document.addEventListener('DOMContentLoaded', () => {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Salvar Configurações';
             setTimeout(() => { statusEl.textContent = ''; }, 4000);
+        }
+    }
+
+    function setupPushNotificationForm() {
+        const form = document.getElementById('push-notification-form');
+        if (form) {
+            form.addEventListener('submit', handlePushNotificationSubmit);
         }
     }
 

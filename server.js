@@ -4,10 +4,30 @@ const db = require('./connection');
 const path = require('path');
 const session = require('express-session');
 const crypto = require('crypto');
+const webpush = require('web-push');
 const app = express();
 const port = 3000;
 
-// // Middleware para logar todas as requisições recebidas
+require('dotenv').config(); // Carrega variáveis do .env
+
+// --- CONFIGURAÇÃO DE NOTIFICAÇÕES PUSH ---
+// Em um ambiente de produção, estas chaves DEVEM estar em variáveis de ambiente (arquivo .env)
+// Para gerar novas chaves, rode no terminal do seu projeto: npx web-push generate-vapid-keys
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+if (!vapidPublicKey || !vapidPrivateKey) {
+    console.error("VAPID keys não estão configuradas. Gere novas chaves e configure-as nas variáveis de ambiente (arquivo .env).");
+} else {
+    webpush.setVapidDetails(
+        'mailto:ministeriomissoes.ibicco@hotmail.com', // E-mail para contato
+        vapidPublicKey,
+        vapidPrivateKey
+    );
+}
+
+
+// Middleware para logar todas as requisições recebidas
 // app.use((req, res, next) => {
 //     console.log(`[${new Date().toISOString()}] Requisição recebida: ${req.method} ${req.url}`);
 //     next();
@@ -19,8 +39,12 @@ app.use(express.json());
 
 // --- CONFIGURAÇÃO DE SESSÃO ---
 // Em produção, use uma variável de ambiente para o 'secret' e configure 'cookie.secure: true' se estiver usando HTTPS.
+if (!process.env.SESSION_SECRET) {
+    console.error("SESSION_SECRET não está configurada no arquivo .env. Gere uma chave segura e adicione-a.");
+    // Em um app de produção, seria ideal parar a execução aqui: process.exit(1);
+}
 app.use(session({
-    secret: 'a2a7f2d3b1e5c6a7b8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1', // Chave secreta forte. É MUITO importante que você troque este valor por uma string aleatória e longa.
+    secret: process.env.SESSION_SECRET, // Chave secreta forte vinda do arquivo .env
     resave: false,
     saveUninitialized: false,
     cookie: { 
@@ -84,6 +108,86 @@ app.post('/api/logout', (req, res) => {
     });
 });
 
+// Endpoint para fornecer a chave pública VAPID para o cliente
+app.get('/api/vapid-public-key', (req, res) => {
+    res.send(vapidPublicKey);
+});
+
+// Endpoint para registrar uma nova inscrição para notificações
+app.post('/api/subscribe', async (req, res) => { // Tornando async
+    const subscription = req.body;
+    try {
+        // Salva a inscrição no banco de dados
+        // Usamos INSERT IGNORE para evitar erros se a inscrição (endpoint) já existir,
+        // o que é esperado se o usuário recarregar a página.
+        await db.execute(
+            'INSERT IGNORE INTO push_subscriptions (endpoint, p256dh, auth) VALUES (?, ?, ?)',
+            [subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth]
+        );
+        res.status(201).json({ message: 'Inscrição recebida com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao salvar inscrição no banco de dados:', error);
+        res.status(500).json({ error: 'Erro ao registrar inscrição.' });
+    }
+});
+
+// Endpoint para ENVIAR uma notificação push manualmente (Admin)
+app.post('/api/send-notification', isAuthenticated, async (req, res) => {
+    try {
+        const { title, body, url } = req.body;
+
+        if (!title || !body) {
+            return res.status(400).json({ error: 'Título e corpo da mensagem são obrigatórios.' });
+        }
+
+        const notificationPayload = JSON.stringify({
+            title: title,
+            body: body,
+            url: url || '/' // URL para abrir ao clicar, default para a home
+        });
+
+        // 1. Busca todas as inscrições do banco de dados
+        const [dbSubscriptions] = await db.execute('SELECT endpoint, p256dh, auth FROM push_subscriptions');
+        
+        if (dbSubscriptions.length === 0) {
+            return res.status(200).json({ message: 'Notificação processada, mas não haviam usuários inscritos para receber.' });
+        }
+
+        // 2. Formata as inscrições para o formato que a lib web-push espera
+        const subscriptionsToSend = dbSubscriptions.map(sub => ({
+            endpoint: sub.endpoint,
+            keys: {
+                p256dh: sub.p256dh,
+                auth: sub.auth
+            }
+        }));
+
+        let successCount = 0;
+
+        // 3. Envia a notificação para todas as inscrições salvas
+        const notificationPromises = subscriptionsToSend.map(sub => 
+            webpush.sendNotification(sub, notificationPayload)
+                .then(() => {
+                    successCount++;
+                })
+                .catch(async (err) => {
+                    if (err.statusCode === 410) {
+                        console.log(`Inscrição ${sub.endpoint} expirou. Removendo do banco.`);
+                        await db.execute('DELETE FROM push_subscriptions WHERE endpoint = ?', [sub.endpoint]);
+                    } else {
+                        console.error(`Erro ao enviar notificação para ${sub.endpoint}:`, err.statusCode, err.body);
+                    }
+                })
+        );
+        
+        await Promise.all(notificationPromises);
+
+        res.status(200).json({ message: `Notificações enviadas com sucesso para ${successCount} de ${subscriptionsToSend.length} inscritos.` });
+    } catch (error) {
+        console.error('Erro ao enviar notificação manual:', error);
+        res.status(500).json({ error: 'Erro interno ao enviar notificações.' });
+    }
+});
 // Endpoint para buscar as notícias do banco de dados
 app.get('/api/noticias', async (req, res) => {
     try {
@@ -119,6 +223,41 @@ app.post('/api/noticias', isAuthenticated, async (req, res) => {
             'INSERT INTO noticias (ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao) VALUES (?, ?, ?, ?)',
             [ntc_titulo, ntc_corpo_mensagem, ntc_imagem_fundo, ntc_data_publicacao]
         );
+
+        // --- Enviar Notificação Push ---
+        const notificationPayload = JSON.stringify({
+            title: 'Nova Notícia no Movimento Antioquia!',
+            body: ntc_titulo,
+            url: '/noticias.html' // URL para abrir ao clicar na notificação
+        });
+
+        // 1. Busca todas as inscrições do banco de dados
+        const [dbSubscriptions] = await db.execute('SELECT endpoint, p256dh, auth FROM push_subscriptions');
+        
+        // 2. Formata as inscrições para o formato que a lib web-push espera
+        const subscriptionsToSend = dbSubscriptions.map(sub => ({
+            endpoint: sub.endpoint,
+            keys: {
+                p256dh: sub.p256dh,
+                auth: sub.auth
+            }
+        }));
+
+        // 3. Envia a notificação para todas as inscrições salvas
+        const notificationPromises = subscriptionsToSend.map(sub => 
+            webpush.sendNotification(sub, notificationPayload)
+                .catch(async (err) => { // Tornando async para poder usar await
+                    // Se a inscrição expirou ou é inválida (erro 410 Gone), removemos ela do banco
+                    if (err.statusCode === 410) {
+                        console.log(`Inscrição ${sub.endpoint} expirou. Removendo do banco.`);
+                        await db.execute('DELETE FROM push_subscriptions WHERE endpoint = ?', [sub.endpoint]);
+                    } else {
+                        console.error(`Erro ao enviar notificação para ${sub.endpoint}:`, err.statusCode, err.body);
+                    }
+                })
+        );
+        await Promise.all(notificationPromises);
+
         res.status(201).json({ id: result.insertId, ...req.body });
     } catch (error) {
         console.error('Erro ao adicionar notícia:', error);

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventos - Movimento Antioquia</title>
+    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+        </div>
+        <div class="brand-name">
+            <h1>MOVIMENTO</h1>
+            <p class="subtitle-script">Antioquia</p>
+        </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="missionarios.html">Missionários</a>
+            <a href="noticias.html">Notícias</a>
+            <a href="relogio.html">Relógio de Oração</a>
+            <a href="quadro-tito.html">Quadro Tito</a>
+            <a href="index.html#contribua" class="nav-contribute-btn">Contribua</a>
+        </nav>
+        <button class="hamburger-menu" aria-label="Abrir menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <a href="https://ibichapeco.com.br/" target="_blank" rel="noopener noreferrer" class="ibicco-logo-container" title="Visitar o site da IBI Chapecó">
+            <img src="imagens/logo-ibicco.png" alt="Logo IBI Chapecó" class="ibicco-logo">
+        </a>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="about animate-on-scroll">
+                <h3>Nossos Eventos</h3>
+                <p>Fique por dentro de toda a nossa programação e participe conosco.</p>
+            </div>
+
+            <!-- Destaque para o próximo evento -->
+            <div id="next-event-highlight" class="animate-on-scroll">
+                <!-- O próximo evento será carregado aqui -->
+            </div>
+
+            <!-- Grade para os demais eventos -->
+            <div class="events-grid-full-page">
+                <!-- Os demais eventos serão carregados aqui -->
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; <span id="current-year"></span> Movimento Antioquia. Todos os direitos reservados.</p>
+            <p>Contato: ministeriomissoes.ibicco@hotmail.com</p>
+            <div class="footer-social">
+                <a href="https://www.instagram.com/movantioquia" target="_blank" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>@movantioquia</span></a>
+                <a href="https://www.instagram.com/ibichapeco" target="_blank" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>@ibichapeco</span></a>
+            </div>
+        </div>
+    </footer>
+
+    <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
+    <script src="script.js"></script>
+</body>
+</html>

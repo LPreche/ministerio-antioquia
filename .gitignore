@@ -1,10 +1,5 @@
-# Diretório de dependências
-/node_modules
-
-# Logs
-logs
-*.log
-npm-debug.log*
-
-# Arquivos de ambiente (variáveis de ambiente)
+# Arquivos de ambiente - NUNCA comitar este arquivo!
 .env
+
+# Dependências do Node.js
+/node_modules

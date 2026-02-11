@@ -26,12 +26,12 @@ async function applyGlobalSettings() {
 
         // --- PIX Control ---
         if (currentPage === 'index.html') {
-            const pixCard = Array.from(document.querySelectorAll('.donation-card')).find(card => card.querySelector('.pix-key'));
+            const pixCard = Array.from(document.querySelectorAll('.contribution-card')).find(card => card.querySelector('.pix-key'));
             if (pixCard) {
                 if (settings.cfg_pix_ativo) {
-                    pixCard.classList.remove('donation-card--disabled');
+                    pixCard.classList.remove('contribution-card--disabled');
                 } else {
-                    pixCard.classList.add('donation-card--disabled');
+                    pixCard.classList.add('contribution-card--disabled');
                 }
             }
         }
@@ -136,7 +136,7 @@ function setupMissionaryModal() {
         } else {
             // Default for dynamic missionaries
             modalButton.textContent = 'Contribuir';
-            modalButton.href = 'index.html#doe-agora'; // Points to the donation section
+            modalButton.href = 'index.html#contribua'; // Points to the contribution section
             modalButton.removeAttribute('target');
             modalButton.removeAttribute('rel');
         }
@@ -362,24 +362,54 @@ function setupNewsModal() {
     modalCloseBtn.addEventListener('click', closeModal);
 }
 
-function setupBackToTopButton() {
+function setupFloatingButtonsBehavior() {
     const backToTopButton = document.getElementById('back-to-top');
-    if (!backToTopButton) return;
+    const whatsappFab = document.querySelector('.whatsapp-fab');
+    const notificationFab = document.querySelector('.notification-fab');
+
+    // Não executa se nenhum botão for encontrado
+    if (!backToTopButton && !whatsappFab && !notificationFab) return;
+
+    let lastScrollY = window.scrollY;
 
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 300) { // Mostra o botão após 300px de rolagem
-            backToTopButton.classList.add('show');
-        } else {
-            backToTopButton.classList.remove('show');
+        const currentScrollY = window.scrollY;
+
+        // Lógica para a visibilidade do botão "Voltar ao Topo" baseada na profundidade da rolagem
+        if (backToTopButton) {
+            if (currentScrollY > 300) {
+                backToTopButton.classList.add('show');
+            } else {
+                backToTopButton.classList.remove('show');
+            }
         }
+
+        // Lógica para mostrar/esconder botões baseada na direção da rolagem
+        // Um pequeno buffer (5px) é adicionado para evitar que esconda em rolagens mínimas
+        if (currentScrollY > lastScrollY + 5 && currentScrollY > 100) {
+            // Rolando para baixo
+            if (whatsappFab) whatsappFab.classList.add('fab-hidden');
+            if (notificationFab) notificationFab.classList.add('fab-hidden');
+            if (backToTopButton) backToTopButton.classList.add('fab-hidden');
+        } else {
+            // Rolando para cima ou no topo da página
+            if (whatsappFab) whatsappFab.classList.remove('fab-hidden');
+            if (notificationFab) notificationFab.classList.remove('fab-hidden');
+            if (backToTopButton) backToTopButton.classList.remove('fab-hidden');
+        }
+
+        lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
     });
 
-    backToTopButton.addEventListener('click', () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
+    // Mantém o listener de clique para o botão "Voltar ao Topo"
+    if (backToTopButton) {
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         });
-    });
+    }
 }
 
 function setupContactForm() {
@@ -476,7 +506,7 @@ function setupPixCopy() {
             // Prevent multiple clicks while in "copied" state
             if (keyElement.dataset.copied) return;
 
-            navigator.clipboard.writeText(originalText).then(() => {
+            const copySuccess = () => {
                 // --- Success Feedback ---
                 keyElement.dataset.copied = 'true';
                 keyElement.textContent = 'Copiado!';
@@ -496,10 +526,50 @@ function setupPixCopy() {
                     keyElement.style.color = originalColor;
                     delete keyElement.dataset.copied;
                 }, 2000);
-            }).catch(err => {
+            };
+
+            const copyFailure = (err) => {
                 console.error('Falha ao copiar a chave PIX:', err);
                 alert('Não foi possível copiar a chave. Por favor, copie manualmente.');
-            });
+            };
+
+            // --- Copy logic with fallback for mobile/older browsers ---
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(originalText).then(copySuccess).catch(err => {
+                    console.warn('navigator.clipboard.writeText() falhou, tentando método legado.', err);
+                    fallbackCopy(originalText);
+                });
+            } else {
+                fallbackCopy(originalText);
+            }
+
+            function fallbackCopy(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                
+                // Avoid scrolling to bottom and make it non-visible
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+                textArea.style.opacity = 0;
+            
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+            
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        copySuccess();
+                    } else {
+                        copyFailure(new Error('document.execCommand returned false'));
+                    }
+                } catch (err) {
+                    copyFailure(err);
+                }
+            
+                document.body.removeChild(textArea);
+            }
         });
     });
 }
@@ -798,48 +868,52 @@ async function loadTitusBoard() {
 }
 
 async function loadPublicEvents() {
-    const eventsGrid = document.querySelector('.events-grid');
-    if (!eventsGrid) return;
+    // Detect current page
+    const isIndexPage = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html');
+    const isEventsPage = window.location.pathname.endsWith('eventos.html');
+
+    // Find containers on the current page
+    const indexGrid = isIndexPage ? document.querySelector('.events-section .events-grid') : null;
+    const indexBtnContainer = isIndexPage ? document.getElementById('all-events-btn-container') : null;
+    const eventsPageHighlightContainer = isEventsPage ? document.getElementById('next-event-highlight') : null;
+    const eventsPageGrid = isEventsPage ? document.querySelector('.events-grid-full-page') : null;
+
+    // Exit if not on a relevant page
+    if (!isIndexPage && !isEventsPage) return;
 
     try {
         const response = await fetch('/api/eventos');
         if (!response.ok) throw new Error('Failed to fetch events');
-        let events = await response.json();
+        let allEvents = await response.json();
 
-        // Filtra por eventos futuros
+        // Filter for upcoming events
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normaliza para o início do dia
-        events = events.filter(event => {
+        let upcomingEvents = allEvents.filter(event => {
             const eventEndDate = new Date(event.evt_data_final);
             return eventEndDate >= today;
         });
 
-        // Ordena por data de início
-        events.sort((a, b) => new Date(a.evt_data_inicial) - new Date(b.evt_data_inicial));
+        // Sort by start date
+        upcomingEvents.sort((a, b) => new Date(a.evt_data_inicial) - new Date(b.evt_data_inicial));
 
-        eventsGrid.innerHTML = ''; // Limpa conteúdo estático
-
-        if (events.length === 0) {
-            eventsGrid.innerHTML = '<p>Nenhum evento programado no momento.</p>';
-            return;
-        }
-
-        events.forEach((event, index) => {
+        // Helper function to create an event card element
+        const createEventCard = (event, isHighlighted = false, isNextOnIndex = false) => {
             const startDate = new Date(event.evt_data_inicial);
             const endDate = new Date(event.evt_data_final);
             
             // Ajusta para o fuso horário para pegar a data local correta
             const correctedStartDate = new Date(startDate.getTime() + startDate.getTimezoneOffset() * 60000);
             const correctedEndDate = new Date(endDate.getTime() + endDate.getTimezoneOffset() * 60000);
-
+    
             const startDay = String(correctedStartDate.getDate()).padStart(2, '0');
             const startMonth = correctedStartDate.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
             
             const endDay = String(correctedEndDate.getDate()).padStart(2, '0');
             const endMonth = correctedEndDate.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
-
+    
             const isSameDay = correctedStartDate.toDateString() === correctedEndDate.toDateString();
-
+    
             let dateHtml = '';
             if (isSameDay) {
                 dateHtml = `
@@ -863,18 +937,22 @@ async function loadPublicEvents() {
                     </div>
                 `;
             }
-
+    
             const card = document.createElement('div');
             card.className = 'event-card';
-            if (index === 0) {
+            if (isHighlighted) {
+                card.classList.add('event-card--highlighted-full');
+            }
+            if (isNextOnIndex) {
                 card.classList.add('event-card--next');
             }
+
             // Adiciona os dados do evento ao card para serem usados na exportação do calendário
             card.dataset.evtTitle = event.evt_titulo;
             card.dataset.evtDesc = event.evt_descricao || '';
             card.dataset.evtStart = event.evt_data_inicial;
             card.dataset.evtEnd = event.evt_data_final;
-
+    
             card.innerHTML = `
                 ${dateHtml}
                 <div class="event-details">
@@ -882,12 +960,55 @@ async function loadPublicEvents() {
                     <p class="event-description">${event.evt_descricao || ''}</p>
                 </div>
             `;
-            eventsGrid.appendChild(card);
-        });
+            return card;
+        };
+
+        // Logic for index.html
+        if (isIndexPage && indexGrid) {
+            const eventsToShow = upcomingEvents.slice(0, 5);
+            indexGrid.innerHTML = '';
+
+            if (eventsToShow.length === 0) {
+                indexGrid.innerHTML = '<p>Nenhum evento programado no momento.</p>';
+            } else {
+                eventsToShow.forEach((event, index) => {
+                    const card = createEventCard(event, false, index === 0);
+                    indexGrid.appendChild(card);
+                });
+
+                if (upcomingEvents.length > 5 && indexBtnContainer) {
+                    indexBtnContainer.innerHTML = `<a href="eventos.html" class="btn btn-dark">Todos os eventos</a>`;
+                }
+            }
+        }
+
+        // Logic for eventos.html
+        if (isEventsPage && eventsPageGrid && eventsPageHighlightContainer) {
+            eventsPageGrid.innerHTML = '';
+            eventsPageHighlightContainer.innerHTML = '';
+
+            if (upcomingEvents.length === 0) {
+                eventsPageHighlightContainer.innerHTML = '<p>Nenhum evento programado no momento.</p>';
+            } else {
+                const nextEvent = upcomingEvents.shift(); // Take the first event for highlighting
+                const highlightedCard = createEventCard(nextEvent, true);
+                eventsPageHighlightContainer.appendChild(highlightedCard);
+
+                if (upcomingEvents.length > 0) {
+                    upcomingEvents.forEach(event => {
+                        const card = createEventCard(event);
+                        eventsPageGrid.appendChild(card);
+                    });
+                } else {
+                    eventsPageGrid.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">Nenhum outro evento futuro programado.</p>';
+                }
+            }
+        }
 
     } catch (error) {
         console.error('Error loading public events:', error);
-        eventsGrid.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
+        if (indexGrid) indexGrid.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
+        if (eventsPageGrid) eventsPageGrid.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
     }
 }
 
@@ -916,8 +1037,8 @@ function setupTitusWarningModal() {
 }
 
 function setupAdminRedirect() {
-    const brandName = document.querySelector('.brand-name');
-    if (!brandName) return;
+    const logoContainer = document.querySelector('.logo-container');
+    if (!logoContainer) return;
 
     let pressTimer;
 
@@ -933,13 +1054,134 @@ function setupAdminRedirect() {
         clearTimeout(pressTimer);
     };
 
-    brandName.addEventListener('mousedown', startPress);
-    brandName.addEventListener('mouseup', cancelPress);
-    brandName.addEventListener('mouseleave', cancelPress);
-    brandName.addEventListener('touchstart', startPress, { passive: false });
-    brandName.addEventListener('touchend', cancelPress);
+    logoContainer.addEventListener('mousedown', startPress);
+    logoContainer.addEventListener('mouseup', cancelPress);
+    logoContainer.addEventListener('mouseleave', cancelPress);
+    logoContainer.addEventListener('touchstart', startPress, { passive: false });
+    logoContainer.addEventListener('touchend', cancelPress);
 }
 
+function setupPushNotifications() {
+    const notificationBtn = document.getElementById('notification-fab');
+    if (!notificationBtn) return;
+
+    // --- Helper functions for detection ---
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isSafariOnIOS = isIOS && /Safari/.test(navigator.userAgent) && !/CriOS/.test(navigator.userAgent) && !/FxiOS/.test(navigator.userAgent);
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+
+    // --- Feature Detection ---
+    // Push Notifications require a secure context (HTTPS) and browser support.
+    const isPushSupported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+
+    if (!isPushSupported) {
+        // Specific handling for iOS Safari users who haven't installed the PWA
+        if (isSafariOnIOS && !isPWA) {
+            notificationBtn.style.display = 'flex'; // Make sure it's visible
+            notificationBtn.title = 'Adicione à Tela de Início para ativar notificações';
+            // Change icon to an info icon
+            notificationBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`;
+            
+            notificationBtn.addEventListener('click', () => {
+                const iosModal = document.getElementById('ios-instructions-modal');
+                if (iosModal) {
+                    iosModal.classList.add('is-visible');
+                    document.body.classList.add('modal-open');
+                }
+            });
+
+            // Add listeners for the new modal's close buttons
+            const iosModal = document.getElementById('ios-instructions-modal');
+            if (iosModal) {
+                const closeModal = () => {
+                    iosModal.classList.remove('is-visible');
+                    document.body.classList.remove('modal-open');
+                };
+                iosModal.querySelector('.modal-close').addEventListener('click', closeModal);
+                const closeBtn = iosModal.querySelector('#ios-instructions-close-btn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', closeModal);
+                }
+            }
+
+        } else {
+            // For all other unsupported browsers (like Chrome on iOS), hide the button.
+            console.warn('As notificações push não são suportadas por este navegador ou neste contexto (requer HTTPS). No iOS, apenas são suportadas em apps adicionados à Tela de Início via Safari.');
+            notificationBtn.style.display = 'none';
+        }
+        return;
+    }
+
+    // Helper function to convert VAPID key
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    async function subscribeUserToPush() {
+        try {
+            const response = await fetch('/api/vapid-public-key');
+            const vapidPublicKey = await response.text();
+            const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+            const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+            const subscription = await serviceWorkerRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+            });
+
+            // Envia a inscrição para o backend
+            await fetch('/api/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subscription)
+            });
+
+            alert('Inscrição para notificações realizada com sucesso!');
+            notificationBtn.style.display = 'none'; // Esconde o botão após a inscrição
+
+        } catch (error) {
+            console.error('Falha ao se inscrever para notificações push:', error);
+            alert('Não foi possível ativar as notificações. Por favor, tente novamente.');
+        }
+    }
+
+    notificationBtn.addEventListener('click', () => {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                subscribeUserToPush();
+            } else {
+                alert('Você precisa permitir as notificações para receber alertas.');
+            }
+        });
+    });
+
+    // Esconde o botão se o usuário já tiver permitido notificações
+    if (('Notification' in window) && Notification.permission === 'granted') {
+        notificationBtn.style.display = 'none';
+    }
+}
+
+function setupServiceWorker() {
+    // Verifica se o navegador suporta Service Workers para PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('PWA Service Worker registrado com sucesso, escopo:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Falha ao registrar PWA Service Worker:', error);
+                });
+        });
+    }
+}
 // --- Inicialização de todas as funções ---
 (async () => {
     const inMaintenance = await applyGlobalSettings();
@@ -949,7 +1191,7 @@ function setupAdminRedirect() {
     setupHamburgerMenu();
     setupScrollAnimations();
     setupMissionaryModal();
-    setupBackToTopButton();
+    setupFloatingButtonsBehavior(); // Substitui setupBackToTopButton
     setupNewsModal();
     setupPrayerClock();
     setupContactForm();
@@ -962,4 +1204,6 @@ function setupAdminRedirect() {
     setupTitusWarningModal();
     loadPublicEvents();
     setupAdminRedirect(); // Adiciona o listener para o redirecionamento secreto
+    setupPushNotifications(); // Adiciona a lógica para notificações push
+    setupServiceWorker(); // Registra o Service Worker para funcionalidades PWA
 })();

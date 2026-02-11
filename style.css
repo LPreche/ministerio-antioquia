@@ -70,6 +70,13 @@ h1 {
     animation: fadeInDown 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s forwards;
 }
 
+/* Ajuste para telas de celular pequenas para evitar que o título sobreponha a logo */
+@media (max-width: 450px) {
+    h1 {
+        font-size: 1.9rem;
+    }
+}
+
 p.subtitle-script {
     margin: 0;
     font-family: var(--font-script);
@@ -138,13 +145,13 @@ nav a:hover, nav a.active {
     color: var(--card-bg);
 }
 
-.nav-donate-btn {
+.nav-contribute-btn {
     background-color: var(--symbol-color);
     color: var(--primary-color) !important;
     font-weight: bold;
 }
 
-.nav-donate-btn:hover {
+.nav-contribute-btn:hover {
     background-color: var(--card-bg) !important;
     color: var(--primary-color) !important;
 }
@@ -170,6 +177,33 @@ nav a:hover, nav a.active {
 body.nav-open .hamburger-menu span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
 body.nav-open .hamburger-menu span:nth-child(2) { opacity: 0; }
 body.nav-open .hamburger-menu span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+/* Estilos para a logo da IBI Chapecó no cabeçalho */
+.ibicco-logo-container {
+    display: flex; /* Garante que seja um item flexível */
+    align-items: center; /* Centraliza verticalmente a logo */
+    margin-left: auto; /* Empurra para a extrema direita */
+    flex-shrink: 0; /* Impede que a logo encolha */
+    padding-left: 15px; /* Espaçamento à esquerda */
+}
+
+.ibicco-logo {
+    height: 80px; /* Tamanho da logo, alinhado com a logo principal */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    mix-blend-mode: lighten; /* Faz com que o fundo preto da imagem se mescle com o fundo do cabeçalho */
+}
+
+.ibicco-logo-container:hover .ibicco-logo {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+/* Oculta a logo da IBI Chapecó em telas menores para evitar sobreposição */
+@media (max-width: 850px) { /* Mesmo breakpoint da navegação */
+    .ibicco-logo-container {
+        display: none;
+    }
+}
 
 main {
     padding-bottom: 0; /* Removido para colar a última seção ao rodapé */
@@ -199,7 +233,7 @@ main {
 .hero,
 #about-section,
 .events-section,
-.donation-section {
+.contribution-section {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -324,6 +358,14 @@ main {
     margin-bottom: 40px;
 }
 
+/* Justifica o texto de parágrafos em seções de conteúdo e modais */
+.about p, 
+.mission-vision p,
+.missionary-card--highlight p,
+#modal-full-story {
+    text-align: justify;
+}
+
 h3 {
     font-size: 2rem;
     color: var(--primary-color);
@@ -372,7 +414,7 @@ h3 {
     background: var(--card-bg);
     border-radius: 10px;
     padding: 30px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
     border-top: 4px solid var(--primary-color);
 }
 
@@ -380,6 +422,7 @@ h3 {
     color: var(--primary-color);
     margin-bottom: 15px;
     font-size: 1.5rem;
+    font-family: var(--font-script);
 }
 
 footer {
@@ -667,7 +710,7 @@ footer p {
     background: var(--card-bg);
     border-radius: 10px;
     padding: 30px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
     text-align: center; /* Centraliza todo o conteúdo */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border: 2px solid var(--primary-color);
@@ -678,7 +721,7 @@ footer p {
 
 .missionary-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .missionary-card {
@@ -911,7 +954,7 @@ body.modal-open {
 #modal-description {
     font-size: 1.1rem;
     line-height: 1.7;
-    text-align: left;
+    text-align: justify;
     margin-bottom: 30px;
 }
 
@@ -965,7 +1008,7 @@ body.modal-open {
 .news-card {
     background: var(--card-bg);
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
     display: flex;
     flex-direction: column;
     overflow: hidden; /* Para o border-radius funcionar com a imagem */
@@ -975,7 +1018,7 @@ body.modal-open {
 
 .news-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .news-card-img-wrapper {
@@ -1116,9 +1159,9 @@ body.modal-open {
 
 .post-it {
     padding: 15px;
-    box-shadow: 5px 5px 15px rgba(0,0,0,0.15);
+    box-shadow: 3px 3px 15px rgba(0,0,0,0.1);
     position: relative;
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1152,7 +1195,7 @@ body.modal-open {
 
 .post-it:hover {
     transform: scale(1.05) rotate(0deg) !important; /* Straighten on hover */
-    box-shadow: 8px 8px 20px rgba(0,0,0,0.2);
+    box-shadow: 5px 5px 25px rgba(0,0,0,0.15);
     z-index: 10;
 }
 
@@ -1252,6 +1295,7 @@ body.modal-open {
     padding: 20px;
     border-radius: 8px;
     border-left: 5px solid var(--symbol-color);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     -webkit-user-select: none; /* Safari */
     -ms-user-select: none; /* IE 10+ */
@@ -1262,7 +1306,7 @@ body.modal-open {
 
 .event-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .event-card--next {
@@ -1311,7 +1355,7 @@ body.modal-open {
     margin: 0 0 5px 0;
     font-size: 1.3rem;
     color: var(--primary-color);
-    font-family: var(--font-main); /* Usar a fonte principal para clareza */
+    font-family: var(--font-script);
     font-weight: 700;
 }
 
@@ -1319,6 +1363,7 @@ body.modal-open {
     margin: 0;
     font-size: 0.95rem;
     color: var(--text-color);
+    text-align: justify;
 }
 
 /* Ajuste para telas pequenas */
@@ -1329,9 +1374,44 @@ body.modal-open {
     }
 }
 
+/* --- Estilos para a Página de Eventos (eventos.html) --- */
+
+#next-event-highlight {
+    margin-bottom: 40px;
+}
+
+.event-card--highlighted-full {
+    background-color: #fff9e3; /* Amarelo claro para destaque */
+    border: 2px solid var(--symbol-color);
+    flex-direction: row;
+    align-items: center;
+    gap: 30px;
+    padding: 30px;
+}
+
+.event-card--highlighted-full .event-title {
+    font-size: 1.8rem;
+}
+
+.events-grid-full-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+
+@media (max-width: 992px) {
+    .events-grid-full-page {
+        grid-template-columns: 1fr;
+    }
+    .event-card--highlighted-full {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
 /* --- Seção de Doação --- */
 
-.donation-section {
+.contribution-section {
     padding: 40px 0;
     background-color: var(--primary-color); /* Fundo escuro para contraste */
     color: var(--card-bg);
@@ -1339,11 +1419,11 @@ body.modal-open {
     text-align: center;
 }
 
-.donation-section h3 {
+.contribution-section h3 {
     color: var(--symbol-color); /* Cor do título igual ao símbolo */
 }
 
-.donation-section p {
+.contribution-section p {
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
@@ -1351,7 +1431,7 @@ body.modal-open {
     opacity: 0.9;
 }
 
-.donation-options {
+.contribution-options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 25px;
@@ -1359,7 +1439,7 @@ body.modal-open {
     text-align: left;
 }
 
-.donation-card {
+.contribution-card {
     background: rgba(255, 255, 255, 0.05);
     padding: 30px;
     border-radius: 10px;
@@ -1367,24 +1447,26 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.donation-card--centered-button .btn {
+.contribution-card--centered-button .btn {
     align-self: center;
 }
 
-.donation-card--disabled {
+.contribution-card--disabled {
     position: relative;
     pointer-events: none; /* Impede qualquer interação com o card */
 }
 
-.donation-card--disabled > * {
+.contribution-card--disabled > * {
     filter: blur(3px); /* Aplica o desfoque a todos os filhos diretos */
     opacity: 0.5;
     transition: filter 0.3s ease, opacity 0.3s ease;
 }
 
-.donation-card--disabled::after {
+.contribution-card--disabled::after {
     content: 'Em Breve';
     position: absolute;
     top: 0;
@@ -1402,15 +1484,15 @@ body.modal-open {
     z-index: 1;
 }
 
-.donation-card h4 {
+.contribution-card h4 {
     color: var(--card-bg);
-    font-family: var(--font-main);
+    font-family: var(--font-script);
     font-size: 1.5rem;
     margin-top: 0;
     margin-bottom: 15px;
 }
 
-.donation-card p {
+.contribution-card p {
     flex-grow: 1; /* Garante que o conteúdo abaixo (botão) fique alinhado na parte inferior do card */
 }
 
@@ -1428,9 +1510,10 @@ body.modal-open {
     padding: 10px 15px;
     border-radius: 5px;
     font-weight: bold;
-    overflow-wrap: break-word; /* Garante a quebra de palavras longas */
+    white-space: nowrap; /* Impede a quebra de linha */
+    overflow: hidden; /* Esconde o texto que transborda */
+    text-overflow: ellipsis; /* Adiciona "..." ao final do texto cortado */
     margin: 0 !important;
-    word-break: break-all; /* Força a quebra de strings sem espaços, como e-mails */
     flex-grow: 1;
     cursor: pointer;
     transition: transform 0.1s ease;
@@ -1439,6 +1522,12 @@ body.modal-open {
 
 .pix-key:active {
     transform: scale(0.98); /* Efeito de clique para feedback */
+}
+
+/* Garante que a chave PIX no modal também seja truncada e ocupe a largura total */
+#pix-modal .pix-key {
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .pix-qr-btn {
@@ -1561,8 +1650,8 @@ body.modal-open {
 /* Botão Flutuante do WhatsApp */
 .whatsapp-fab {
     position: fixed;
-    bottom: 25px;
-    left: 25px; /* Posição à esquerda */
+    bottom: 80px; /* Posição acima do botão "Voltar ao Topo" */
+    right: 25px; /* Movido para a direita */
     background-color: #25D366; /* Cor oficial do WhatsApp */
     color: white;
     width: 60px;
@@ -1573,10 +1662,33 @@ body.modal-open {
     justify-content: center;
     z-index: 998; /* Abaixo do back-to-top */
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    transition: transform 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
 }
 
 .whatsapp-fab:hover {
+    transform: scale(1.1);
+}
+
+/* Botão Flutuante de Notificações */
+.notification-fab {
+    position: fixed;
+    bottom: 145px; /* Acima do botão de WhatsApp */
+    right: 25px;
+    background-color: var(--symbol-color);
+    color: var(--primary-color);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 997;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
+    border: none;
+    cursor: pointer;
+}
+.notification-fab:hover {
     transform: scale(1.1);
 }
 
@@ -1599,7 +1711,7 @@ body.modal-open {
     z-index: 999;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease, visibility 0.4s ease;
     transform: translateY(20px);
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
@@ -1614,6 +1726,16 @@ body.modal-open {
     background-color: var(--symbol-color);
 }
 
+/* --- Estilos para esconder os botões flutuantes no scroll --- */
+.whatsapp-fab.fab-hidden,
+.notification-fab.fab-hidden,
+.back-to-top.fab-hidden {
+    transform: translateY(150px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
 /* --- Estilos para a Página de Admin --- */
 
 .admin-page-body {
@@ -1626,7 +1748,7 @@ body.modal-open {
 }
 
 #logout-btn {
-    margin-left: auto; /* Empurra o botão para a direita do header */
+    margin-left: 20px; /* Adiciona espaço à esquerda do botão */
     background-color: var(--symbol-color);
     color: var(--primary-color) !important;
     padding: 8px 18px;
@@ -1687,6 +1809,29 @@ body.modal-open {
     border-bottom: 1px solid #eee;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     border-radius: 8px;
+}
+
+/* Estilos para o novo menu select no admin em telas móveis */
+.admin-mobile-nav {
+    display: none; /* Escondido por padrão em telas grandes */
+    margin-bottom: 30px;
+}
+
+.admin-mobile-nav label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+#admin-section-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: var(--font-main);
+    font-size: 1rem;
+    background-color: white;
 }
 
 .admin-tab-btn {
@@ -1812,6 +1957,14 @@ body.modal-open {
 
 @media (max-width: 768px) {
     .admin-table thead { display: none; }
+
+    /* Esconde a navegação de abas e mostra o select no admin */
+    .admin-tabs-nav {
+        display: none;
+    }
+    .admin-mobile-nav {
+        display: block;
+    }
     .admin-table tr { display: block; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
     .admin-table td { display: block; text-align: right; border-bottom: 1px dotted #ccc; padding-left: 50%; position: relative; }
     .admin-table td:before { content: attr(data-label); position: absolute; left: 15px; width: calc(50% - 30px); padding-right: 10px; white-space: nowrap; text-align: left; font-weight: bold; }
@@ -1821,10 +1974,18 @@ body.modal-open {
 
 @media (max-width: 600px) {
     .whatsapp-fab {
-        bottom: 95px; /* Sobe o botão do WhatsApp para não sobrepor o footer */
-        left: 20px;
-        width: 55px;
-        height: 55px;
+        bottom: 85px;
+        right: 20px;
+        width: 50px; /* Tamanho diminuído */
+        height: 50px; /* Tamanho diminuído */
+    }
+    .notification-fab {
+        bottom: 145px;
+        right: 20px;
+    }
+    .back-to-top {
+        bottom: 30px; /* Movido para cima para não sobrepor o rodapé */
+        right: 20px;
     }
 }
 
