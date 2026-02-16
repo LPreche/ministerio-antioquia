@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function loadAdminPostitsForQuadro(quadroId) {
+    async function loadAdminPostitsForQuadro(quadroId, isEditable = false) {
         if (!quadroId) return;
         const tableBody = document.querySelector('#postits-table tbody');
         try {
@@ -484,13 +484,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableBody.innerHTML = '<tr><td colspan="2">Nenhum post-it cadastrado para este quadro.</td></tr>';
             } else {
                 items.forEach(item => {
+                    const actionsHtml = isEditable
+                        ? `<button class="btn-edit" data-id="${item.id_postit}" data-section="postits">Editar</button>
+                           <button class="btn-delete" data-id="${item.id_postit}" data-section="postits">Excluir</button>`
+                        : `<span>Visualização</span>`;
+
                     const row = `
                         <tr data-id="${item.id_postit}">
                             <td data-label="Conteúdo" class="truncate-cell" title="${escapeAttr(item.pst_conteudo)}">${item.pst_conteudo}</td>
-                            <td data-label="Ações">
-                                <button class="btn-edit" data-id="${item.id_postit}" data-section="postits">Editar</button>
-                                <button class="btn-delete" data-id="${item.id_postit}" data-section="postits">Excluir</button>
-                            </td>
+                            <td data-label="Ações">${actionsHtml}</td>
                         </tr>
                     `;
                     tableBody.innerHTML += row;
@@ -525,18 +527,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const option = document.createElement('option');
                 option.value = item.id_quadro;
                 option.textContent = `Quadro Tito (${formatDate(item.qdt_data_inicial)} - ${formatDate(item.qdt_data_final)})`;
+                option.dataset.endDate = item.qdt_data_final; // Store end date
                 select.appendChild(option);
             });
 
             select.addEventListener('change', () => {
-                const selectedId = select.value;
+                const selectedOption = select.options[select.selectedIndex];
+                const selectedId = selectedOption.value;
+
+                // Reset buttons first
+                addPostitBtn.disabled = true;
+                editQuadroBtn.style.display = 'none';
+
                 if (selectedId) {
-                    addPostitBtn.disabled = false;
                     editQuadroBtn.style.display = 'inline-block';
-                    loadAdminPostitsForQuadro(selectedId);
+
+                    const endDateString = selectedOption.dataset.endDate;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    const endDate = new Date(endDateString);
+                    const correctedEndDate = new Date(endDate.getTime() + endDate.getTimezoneOffset() * 60000);
+                    correctedEndDate.setHours(0, 0, 0, 0);
+
+                    const isEditable = correctedEndDate >= today;
+
+                    addPostitBtn.disabled = !isEditable;
+                    loadAdminPostitsForQuadro(selectedId, isEditable);
                 } else {
-                    addPostitBtn.disabled = true;
-                    editQuadroBtn.style.display = 'none';
                     postitsTableBody.innerHTML = '<tr><td colspan="2">Selecione um quadro para ver os post-its.</td></tr>';
                 }
                 addPostitBtn.disabled ? addPostitBtn.classList.add('btn-disabled') : addPostitBtn.classList.remove('btn-disabled');

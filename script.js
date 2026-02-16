@@ -73,6 +73,13 @@ function setupHamburgerMenu() {
             }
         });
     });
+
+    // Fecha o menu hamburguer ao rolar a página
+    window.addEventListener('scroll', () => {
+        if (body.classList.contains('nav-open')) {
+            toggleMenu();
+        }
+    }, { passive: true }); // Melhora a performance do scroll
 }
 
 function setupScrollAnimations() {
@@ -820,7 +827,7 @@ async function loadTitusBoard() {
         }
 
         if (!board) {
-            titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Não há ensinamentos ativos no quadro no momento.</p>';
+            titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Não há post-its ativos no quadro no momento.</p>';
             return;
         }
 
@@ -1005,6 +1012,19 @@ async function loadPublicEvents() {
             }
         }
 
+        // --- FIX for Anchor Link after Dynamic Content Load ---
+        // After dynamically loading events, the page height changes. If the user
+        // navigated directly to an anchor (e.g., index.html#contribua), the initial
+        // scroll position might be wrong. This code re-triggers the scroll to the
+        // correct element after the content has been rendered.
+        if (isIndexPage && window.location.hash) {
+            const targetElement = document.querySelector(window.location.hash);
+            if (targetElement) {
+                // A small timeout ensures the browser has finished rendering the new content.
+                setTimeout(() => targetElement.scrollIntoView(), 100);
+            }
+        }
+
     } catch (error) {
         console.error('Error loading public events:', error);
         if (indexGrid) indexGrid.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
@@ -1047,7 +1067,7 @@ function setupAdminRedirect() {
         e.preventDefault();
         pressTimer = window.setTimeout(() => {
             window.location.href = 'admin.html';
-        }, 5000); // 5 segundos
+        }, 4000); // 4 segundos
     };
 
     const cancelPress = () => {
@@ -1182,6 +1202,7 @@ function setupServiceWorker() {
         });
     }
 }
+
 // --- Inicialização de todas as funções ---
 (async () => {
     const inMaintenance = await applyGlobalSettings();

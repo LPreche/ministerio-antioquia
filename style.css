@@ -28,52 +28,48 @@ body {
 header {
     background: var(--primary-color);
     color: var(--card-bg);
-    padding: 15px 5%;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    padding: 10px 5%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Logo à esquerda, espaço à direita */
     flex-wrap: wrap;
 }
 
 .logo-container {
     display: flex;
     align-items: center;
-    /* O brand-name será posicionado de forma absoluta, então o container agora só alinha o logo */
 }
 
 .logo {
-    height: 80px; /* Aumenta o tamanho da logo */
+    height: 70px; /* Ajustado para 70px para manter a consistência do layout */
 }
 
 .brand-name {
-    position: absolute;
-    left: 50%;
-    top: 55px; /* Alinha verticalmente com o centro da logo */
-    transform: translate(-50%, -50%); /* Centraliza horizontalmente e ajusta o 'top' */
-    text-align: center;
+    position: static; /* Remove o posicionamento absoluto para o layout desktop */
+    transform: none;
+    text-align: left;
+    margin-left: 20px; /* Espaço fixo para agrupar com a logo à esquerda */
 }
 
 h1 {
     margin: 0;
     font-family: var(--font-script); /* Fonte mais atrativa */
-    font-size: 2.2rem;
+    font-size: 1.8rem; /* Fonte reduzida para caber na linha */
     color: var(--symbol-color); /* Altera a cor para a do símbolo */
     font-weight: 500;
     line-height: 1;
     text-transform: none; /* Remove o uppercase para a fonte script */
-    /* Animação */
-    opacity: 0;
-    animation: fadeInDown 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s forwards;
+    opacity: 1; /* Garante visibilidade */
+    animation: none; /* Remove animação de entrada */
 }
 
 /* Ajuste para telas de celular pequenas para evitar que o título sobreponha a logo */
 @media (max-width: 450px) {
     h1 {
-        font-size: 1.9rem;
+        font-size: 1.6rem; /* Ajuste fino para o novo layout mobile */
     }
 }
 
@@ -81,11 +77,11 @@ p.subtitle-script {
     margin: 0;
     font-family: var(--font-script);
     font-style: italic;
-    font-size: 1.4rem;
+    font-size: 1.1rem; /* Fonte reduzida para caber na linha */
     color: var(--symbol-color); /* Altera a cor para a do símbolo */
-    /* Animação */
-    opacity: 0; /* Começa invisível para a animação */
-    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
+    opacity: 1; /* Garante visibilidade */
+    animation: none; /* Remove animação de entrada */
+    padding-left: 20px; /* Ajusta o recuo para o novo layout */
 }
 
 /* --- Animações do Cabeçalho --- */
@@ -111,6 +107,18 @@ p.subtitle-script {
     }
 }
 
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-15px);
+    }
+    60% {
+        transform: translateY(-7px);
+    }
+}
+
 @keyframes fadeInScaleUp {
     from {
         opacity: 0;
@@ -125,19 +133,17 @@ p.subtitle-script {
 nav {
     display: flex;
     justify-content: center;
-    gap: 15px;
-    width: 100%;
-    order: 10;
-    margin-top: 10px;
+    gap: 15px; /* Aumentado o espaçamento entre os itens do menu */
+    margin-left: auto; /* Empurra a navegação e os itens à direita para a direita */
 }
 
 nav a {
-    color: var(--secondary-color);
+    color: var(--card-bg); /* Cor alterada para branco para melhor contraste no fundo transparente */
     text-decoration: none;
-    padding: 8px 18px; /* Aumenta a área de clique, criando um botão */
-    border-radius: 20px; /* Cantos arredondados para o visual de "pílula" */
+    padding: 8px 15px;
+    border-radius: 20px;
     font-weight: 500;
-    transition: all 0.3s ease; /* Transição suave para todas as propriedades */
+    transition: all 0.3s ease;
 }
 
 nav a:hover, nav a.active {
@@ -171,7 +177,7 @@ nav a:hover, nav a.active {
     height: 3px;
     background-color: var(--card-bg);
     margin: 5px 0;
-    transition: all 0.3s ease-in-out;
+    transition: all 0.4s ease-in-out; /* Aumenta a duração para uma animação mais suave */
 }
 
 body.nav-open .hamburger-menu span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
@@ -182,13 +188,13 @@ body.nav-open .hamburger-menu span:nth-child(3) { transform: translateY(-8px) ro
 .ibicco-logo-container {
     display: flex; /* Garante que seja um item flexível */
     align-items: center; /* Centraliza verticalmente a logo */
-    margin-left: auto; /* Empurra para a extrema direita */
+    margin-left: 15px; /* Adiciona espaço à esquerda, depois da navegação */
     flex-shrink: 0; /* Impede que a logo encolha */
-    padding-left: 15px; /* Espaçamento à esquerda */
+    padding-left: 0;
 }
 
 .ibicco-logo {
-    height: 80px; /* Tamanho da logo, alinhado com a logo principal */
+    height: 70px; /* Alinha com a nova altura da logo principal */
     transition: opacity 0.3s ease, transform 0.3s ease;
     mix-blend-mode: lighten; /* Faz com que o fundo preto da imagem se mescle com o fundo do cabeçalho */
 }
@@ -199,7 +205,7 @@ body.nav-open .hamburger-menu span:nth-child(3) { transform: translateY(-8px) ro
 }
 
 /* Oculta a logo da IBI Chapecó em telas menores para evitar sobreposição */
-@media (max-width: 850px) { /* Mesmo breakpoint da navegação */
+@media (max-width: 1328px) { /* Mesmo breakpoint da navegação */
     .ibicco-logo-container {
         display: none;
     }
@@ -210,6 +216,19 @@ main {
     flex-grow: 1; /* Faz o conteúdo principal crescer para empurrar o rodapé para baixo */
 }
 
+/*
+ * Corrige o problema de posicionamento de âncoras (#) com cabeçalho fixo.
+ * Adicione a classe .scroll-target a qualquer seção que sirva como destino de um link âncora
+ * para garantir que ela não fique escondida atrás do cabeçalho.
+ */
+.scroll-target {
+    scroll-margin-top: 100px; /* Altura do header (90px) + margem */
+}
+@media (max-width: 1328px) {
+    .scroll-target {
+        scroll-margin-top: 100px; /* Altura do header (90px) + margem */
+    }
+}
 /* Animação de scroll */
 .animate-on-scroll {
     opacity: 0;
@@ -243,18 +262,26 @@ main {
 }
 
 .hero {
-    /* Adiciona uma imagem de fundo com um overlay escuro para legibilidade */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('imagens/hero-background.png');
-    background-size: cover;
-    background-position: center;
     color: var(--card-bg); /* Muda a cor do texto para branco para melhor contraste */
     text-align: center;
     position: relative;
-    height: 100dvh; /* Usa a altura dinâmica da viewport para se ajustar perfeitamente, especialmente em celulares */
+    height: calc(100dvh - 90px); /* Ajusta a altura para preencher a tela descontando o cabeçalho de 90px */
     /* Remove o padding vertical herdado para evitar que a altura ultrapasse 100vh.
        A centralização vertical do conteúdo já é feita pelo 'justify-content: center' do flexbox. */
     padding-top: 0;
     padding-bottom: 0;
+    overflow: hidden; /* Essencial para o posicionamento do pseudo-elemento de fundo */
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('imagens/hero-background.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Cria o efeito parallax */
+    z-index: -1; /* Coloca o fundo atrás do conteúdo */
 }
 
 .hero::after {
@@ -264,7 +291,8 @@ main {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.15); /* Overlay sutil que escurece um pouco mais */
+    /* Cria um efeito de vinheta sutil no hover */
+    background-image: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.25) 100%);
     opacity: 0;
     transition: opacity 0.4s ease;
     z-index: 1; /* Garante que o overlay fique acima da imagem de fundo */
@@ -275,20 +303,22 @@ main {
 }
 
 .hero h2 {
-    font-size: 2.5rem;
+    font-size: clamp(2.2rem, 1.5rem + 2.5vw, 3rem); /* Fonte responsiva que se ajusta ao tamanho da tela */
     margin-bottom: 20px;
     font-family: var(--font-script);
     position: relative; z-index: 2; /* Garante que o texto fique acima do overlay do hover */
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5); /* Sombra para profundidade e legibilidade */
     /* Animação */
     opacity: 0;
     animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
 }
 
 .hero p {
-    font-size: 1.1rem;
-    max-width: 600px;
+    font-size: clamp(1rem, 0.8rem + 0.5vw, 1.2rem); /* Fonte responsiva que se ajusta ao tamanho da tela */
+    max-width: 650px; /* Um pouco mais largo */
     margin: 0 auto 30px;
     position: relative; z-index: 2; /* Garante que o texto fique acima do overlay do hover */
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5); /* Sombra sutil para legibilidade */
     /* Animação */
     opacity: 0;
     animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.8s forwards;
@@ -318,6 +348,24 @@ main {
     /* Animação */
     opacity: 0;
     animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1.1s forwards;
+    font-size: clamp(0.9rem, 0.8rem + 0.5vw, 1.1rem); /* Tamanho da fonte responsivo */
+    padding: clamp(10px, 0.5rem + 1vw, 14px) clamp(20px, 1rem + 2vw, 30px); /* Padding responsivo */
+}
+
+.scroll-down-icon {
+    position: absolute;
+    bottom: 30px;
+    left: calc(50% - 16px); /* Centraliza o ícone de 32px */
+    z-index: 2;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease 1.5s forwards, bounce 2.5s infinite 2.3s;
+}
+
+.scroll-down-icon svg {
+    width: 32px;
+    height: 32px;
+    stroke: white;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
 }
 
 .btn-primary {
@@ -385,17 +433,35 @@ h3 {
     }
 }
 
-@media (max-width: 850px) {
+@media (max-width: 1328px) {
+    header {
+        justify-content: space-between; /* Garante que logo e hamburger fiquem nas pontas */
+    }
+
+    .brand-name {
+        /* Em telas menores, o nome volta a ser absoluto e centralizado */
+        position: absolute;
+        left: 50%;
+        top: 45px; /* Metade da altura do header (90px / 2) para centralizar */
+        transform: translate(-50%, -50%);
+        text-align: center;
+        margin-left: 0;
+    }
+
+    p.subtitle-script {
+        /* Remove o recuo na visão mobile, pois o .brand-name já centraliza todo o texto */
+        padding-left: 0;
+    }
+
     .hamburger-menu {
         display: block; /* Mostra o hamburguer em telas menores */
     }
 
     nav {
-        display: none; /* Esconde a navegação por padrão */
-        position: absolute;
-        order: initial; /* Reseta a ordem para o menu dropdown */
-        margin-top: 0;
-        top: 110px; /* Altura do header (80px logo + 15px padding * 2) */
+        display: flex; /* Alterado de 'none' para 'flex' para permitir animação */
+        position: absolute; /* Para o menu dropdown */
+        margin-left: 0; /* Reseta a margem do layout desktop */
+        top: 90px; /* Altura do header (70px logo + 10px padding * 2) */
         left: 0;
         width: 100%;
         background-color: var(--primary-color);
@@ -403,11 +469,41 @@ h3 {
         align-items: center;
         padding: 20px 0;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        /* Propriedades para animação de fade e slide */
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0.3s;
     }
 
     nav.nav-open {
-        display: flex; /* Mostra a navegação quando o menu está aberto */
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        transition-delay: 0s; /* Garante que a transição de entrada comece imediatamente */
     }
+
+    /* Animação em cascata para os itens do menu */
+    nav a {
+        opacity: 0;
+        transform: translateY(-15px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    nav.nav-open a {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Adiciona um atraso para cada item, criando o efeito cascata */
+    nav.nav-open a:nth-child(1) { transition-delay: 0.1s; }
+    nav.nav-open a:nth-child(2) { transition-delay: 0.15s; }
+    nav.nav-open a:nth-child(3) { transition-delay: 0.2s; }
+    nav.nav-open a:nth-child(4) { transition-delay: 0.25s; }
+    nav.nav-open a:nth-child(5) { transition-delay: 0.3s; }
+    nav.nav-open a:nth-child(6) { transition-delay: 0.35s; }
+    nav.nav-open a:nth-child(7) { transition-delay: 0.4s; }
+    nav.nav-open a:nth-child(8) { transition-delay: 0.45s; }
 }
 
 .card {
@@ -1745,10 +1841,34 @@ body.modal-open {
 #admin-header {
     /* Reutiliza o estilo do header principal, mas pode ter ajustes */
     /* O JS já aplica 'display: flex', o que nos permite alinhar itens. */
+    justify-content: center; /* Centraliza os itens do cabeçalho */
+    gap: 25px; /* Adiciona um espaçamento consistente entre os itens */
+}
+
+/* Remove margens laterais dos filhos diretos para que o 'gap' controle o espaçamento */
+#admin-header > .brand-name,
+#admin-header > .ibicco-logo-container,
+#admin-header > #logout-btn {
+    margin-left: 0;
+}
+
+/* Oculta as logos no cabeçalho do admin em telas menores para evitar sobreposição
+   e garante que o layout não quebre como o header principal. */
+@media (max-width: 1328px) {
+    #admin-header {
+        justify-content: center; /* Mantém a centralização dos itens restantes */
+    }
+    #admin-header .brand-name {
+        position: static; /* Previne o posicionamento absoluto herdado do header principal */
+        transform: none;
+    }
+    #admin-header .logo-container {
+        display: none; /* Oculta a logo principal */
+    }
+    /* A logo da IBI Chapecó já é ocultada em um seletor geral neste breakpoint. */
 }
 
 #logout-btn {
-    margin-left: 20px; /* Adiciona espaço à esquerda do botão */
     background-color: var(--symbol-color);
     color: var(--primary-color) !important;
     padding: 8px 18px;
@@ -2061,6 +2181,7 @@ body.in-maintenance > footer {
 }
 
 #maintenance-modal .maintenance-icon {
-    width: 120px; /* Aumentado de 80px */
+    width: clamp(140px, 25vw, 200px); /* Tamanho responsivo para se ajustar à tela */
+    height: auto; /* Mantém a proporção da imagem */
     margin-bottom: 20px;
 }

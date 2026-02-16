@@ -801,8 +801,32 @@ app.post('/api/postits', isAuthenticated, async (req, res) => {
 
 app.put('/api/postits/:id', isAuthenticated, async (req, res) => {
     try {
+        const postItId = req.params.id;
         const { pst_conteudo, id_quadro } = req.body;
-        await db.execute('UPDATE post_it SET pst_conteudo = ?, id_quadro = ? WHERE id_postit = ?', [pst_conteudo, id_quadro, req.params.id]);
+        const [postIts] = await db.execute('SELECT id_quadro FROM post_it WHERE id_postit = ?', [postItId]);
+        if (postIts.length === 0) {
+            return res.status(404).json({ error: 'Post-it não encontrado.' });
+        }
+        const currentQuadroId = postIts[0].id_quadro;
+
+        // 2. Check if the current board is still editable (not finished)
+        const [quadros] = await db.execute('SELECT qdt_data_final FROM quadro_tito WHERE id_quadro = ?', [currentQuadroId]);
+        if (quadros.length === 0) {
+            // Should not happen in a consistent DB
+            return res.status(404).json({ error: 'Quadro associado ao post-it não encontrado.' });
+        }
+        const quadro = quadros[0];
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endDate = new Date(quadro.qdt_data_final);
+
+        if (endDate < today) {
+            return res.status(403).json({ error: 'Não é permitido editar post-its de quadros finalizados.' });
+        }
+
+        // 3. If checks pass, perform the update
+        await db.execute('UPDATE post_it SET pst_conteudo = ?, id_quadro = ? WHERE id_postit = ?', [pst_conteudo, id_quadro, postItId]);
         res.json({ message: 'Post-it atualizado.' });
     } catch (error) {
         console.error('Erro ao atualizar post-it:', error);
@@ -813,6 +837,31 @@ app.put('/api/postits/:id', isAuthenticated, async (req, res) => {
 app.delete('/api/postits/:id', isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
+
+        // 1. Find the post-it and its board to check permissions
+        const [postIts] = await db.execute('SELECT id_quadro FROM post_it WHERE id_postit = ?', [id]);
+        if (postIts.length === 0) {
+            // Item doesn't exist, so it's idempotent. Return success.
+            return res.status(204).send();
+        }
+        const currentQuadroId = postIts[0].id_quadro;
+
+        // 2. Check if the board is still editable (not finished)
+        const [quadros] = await db.execute('SELECT qdt_data_final FROM quadro_tito WHERE id_quadro = ?', [currentQuadroId]);
+        if (quadros.length === 0) {
+            return res.status(404).json({ error: 'Quadro associado ao post-it não encontrado.' });
+        }
+        const quadro = quadros[0];
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endDate = new Date(quadro.qdt_data_final);
+
+        if (endDate < today) {
+            return res.status(403).json({ error: 'Não é permitido excluir post-its de quadros finalizados.' });
+        }
+
+        // 3. If checks pass, perform the deletion
         await db.execute('DELETE FROM post_it WHERE id_postit = ?', [id]);
         res.status(204).send();
     } catch (error) {
