@@ -845,6 +845,15 @@ async function loadTitusBoard() {
         periodContainer.innerHTML = `<div class="titus-period-display"><strong>Período ativo:</strong> ${formatDate(board.qdt_data_inicial)} a ${formatDate(board.qdt_data_final)}</div>`;
         titusBoard.parentNode.insertBefore(periodContainer, titusBoard);
 
+        // Adiciona o botão para sugerir post-it
+        const suggestionButtonContainer = document.createElement('div');
+        suggestionButtonContainer.style.textAlign = 'left';
+        suggestionButtonContainer.style.marginBottom = '20px';
+        suggestionButtonContainer.style.paddingLeft = '5vw'; // Alinha o botão com a margem do quadro
+        suggestionButtonContainer.innerHTML = `<button id="open-suggestion-modal" class="btn btn-primary">Inserir Post-it</button>`;
+        // Insere o botão antes do quadro de cortiça
+        titusBoard.parentNode.insertBefore(suggestionButtonContainer, titusBoard);
+
         if (postIts.length === 0) {
             titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Nenhum post-it cadastrado para este período.</p>';
             return;
@@ -1030,6 +1039,66 @@ async function loadPublicEvents() {
         if (indexGrid) indexGrid.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
         if (eventsPageGrid) eventsPageGrid.innerHTML = '<p>Não foi possível carregar os eventos no momento.</p>';
     }
+}
+
+function setupTitusSuggestionModal() {
+    const modal = document.getElementById('suggestion-modal');
+    if (!modal) return;
+
+    // O botão só existe se houver um quadro ativo, então o listener é adicionado depois
+    const openBtn = document.getElementById('open-suggestion-modal');
+    if (!openBtn) return; 
+
+    const closeBtn = modal.querySelector('.modal-close');
+    const form = document.getElementById('suggestion-form');
+    const body = document.body;
+
+    const openModal = () => {
+        modal.classList.add('is-visible');
+        body.classList.add('modal-open');
+    };
+
+    const closeModal = () => {
+        modal.classList.remove('is-visible');
+        body.classList.remove('modal-open');
+        form.reset();
+    };
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+
+        const data = {
+            nome_autor: form.sug_nome_autor.value,
+            conteudo: form.sug_conteudo.value
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+
+        try {
+            const response = await fetch('/api/tito/sugestao', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Erro no servidor');
+            
+            alert(result.message);
+            closeModal();
+
+        } catch (error) {
+            alert(`Erro ao enviar sugestão: ${error.message}`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
 }
 
 function setupTitusWarningModal() {
@@ -1221,7 +1290,8 @@ function setupServiceWorker() {
     setupCalendarExport(); // Adiciona a lógica para exportar para o calendário
     loadNews();
     loadMissionaries();
-    loadTitusBoard();
+    await loadTitusBoard();
+    setupTitusSuggestionModal();
     setupTitusWarningModal();
     loadPublicEvents();
     setupAdminRedirect(); // Adiciona o listener para o redirecionamento secreto

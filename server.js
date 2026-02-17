@@ -8,6 +8,17 @@ const webpush = require('web-push');
 const app = express();
 const port = 3000;
 
+// --- CONFIGURAÇÃO DE ATUALIZAÇÕES EM TEMPO REAL (SSE) ---
+let sseClients = []; // Armazena os clientes (admins) conectados para receber atualizações
+
+// Função para enviar um evento para todos os clientes conectados
+function sendSseUpdate(data) {
+    console.log(`Enviando atualização SSE para ${sseClients.length} clientes.`);
+    sseClients.forEach(client => {
+        client.res.write(`data: ${JSON.stringify(data)}\n\n`);
+    });
+}
+
 require('dotenv').config(); // Carrega variáveis do .env
 
 // --- CONFIGURAÇÃO DE NOTIFICAÇÕES PUSH ---
@@ -601,6 +612,65 @@ app.get('/api/tito', async (req, res) => {
     }
 });
 
+// Endpoint de SSE (Server-Sent Events) para atualizações em tempo real no painel de admin
+app.get('/api/admin/sugestoes-stream', isAuthenticated, (req, res) => {
+    // Configura os headers para a conexão SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const clientId = Date.now();
+    const newClient = { id: clientId, res: res };
+    sseClients.push(newClient);
+    console.log(`Admin client ${clientId} conectado para receber atualizações.`);
+
+    // Envia uma mensagem de conexão inicial
+    res.write('data: {"type": "connected"}\n\n');
+
+    // Remove o cliente da lista quando a conexão for fechada
+    req.on('close', () => {
+        sseClients = sseClients.filter(client => client.id !== clientId);
+        console.log(`Admin client ${clientId} desconectado.`);
+    });
+});
+
+// POST (Public): Adiciona uma nova sugestão de post-it para aprovação
+app.post('/api/tito/sugestao', async (req, res) => {
+    try {
+        const { nome_autor, conteudo } = req.body;
+
+        if (!nome_autor || !conteudo) {
+            return res.status(400).json({ error: 'Nome e conteúdo são obrigatórios.' });
+        }
+
+        // 1. Encontrar o quadro ativo
+        const [activeBoards] = await db.execute(
+            'SELECT id_quadro FROM quadro_tito WHERE CURDATE() BETWEEN qdt_data_inicial AND qdt_data_final ORDER BY qdt_data_criacao DESC LIMIT 1'
+        );
+
+        if (activeBoards.length === 0) {
+            return res.status(404).json({ error: 'Nenhum quadro ativo encontrado para receber sugestões.' });
+        }
+        const activeBoardId = activeBoards[0].id_quadro;
+
+        // 2. Inserir a sugestão na nova tabela
+        await db.execute(
+            'INSERT INTO postit_sugestoes (id_quadro, sug_nome_autor, sug_conteudo) VALUES (?, ?, ?)',
+            [activeBoardId, nome_autor, conteudo]
+        );
+
+        // Notifica os painéis de administração abertos sobre a nova sugestão
+        sendSseUpdate({ type: 'new_suggestion' });
+
+        res.status(201).json({ message: 'Sugestão enviada com sucesso! Ela será analisada por um administrador.' });
+
+    } catch (error) {
+        console.error('Erro ao enviar sugestão de post-it:', error);
+        res.status(500).json({ error: 'Erro interno ao processar sua sugestão.' });
+    }
+});
+
 // --- ROTAS DE ADMIN (todas protegidas a partir daqui) ---
 // app.use('/api/admin', isAuthenticated); // Removido para aplicar autenticação individualmente
 
@@ -866,6 +936,69 @@ app.delete('/api/postits/:id', isAuthenticated, async (req, res) => {
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: 'Erro ao deletar post-it.' });
+    }
+});
+
+// --- Endpoints de Admin para Sugestões de Post-it ---
+
+// GET (Admin): Retorna todas as sugestões pendentes
+app.get('/api/admin/sugestoes-pendentes', isAuthenticated, async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            `SELECT s.id_sugestao, s.sug_nome_autor, s.sug_conteudo, s.sug_data_criacao, q.qdt_data_inicial, q.qdt_data_final 
+             FROM postit_sugestoes s
+             JOIN quadro_tito q ON s.id_quadro = q.id_quadro
+             WHERE s.sug_status = 'pendente' 
+             ORDER BY s.sug_data_criacao ASC`
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Erro ao buscar sugestões pendentes:', error);
+        res.status(500).json({ error: 'Erro ao buscar sugestões.' });
+    }
+});
+
+// POST (Admin): Aprova uma sugestão
+app.post('/api/admin/sugestoes/:id/aprovar', isAuthenticated, async (req, res) => {
+    const sugestaoId = req.params.id;
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Buscar a sugestão
+        const [sugestoes] = await connection.execute('SELECT id_quadro, sug_conteudo FROM postit_sugestoes WHERE id_sugestao = ? AND sug_status = "pendente"', [sugestaoId]);
+        if (sugestoes.length === 0) {
+            throw new Error('Sugestão não encontrada ou já processada.');
+        }
+        const sugestao = sugestoes[0];
+
+        // 2. Inserir o novo post-it
+        await connection.execute('INSERT INTO post_it (id_quadro, pst_conteudo) VALUES (?, ?)', [sugestao.id_quadro, sugestao.sug_conteudo]);
+
+        // 3. Atualizar o status da sugestão
+        await connection.execute('UPDATE postit_sugestoes SET sug_status = "aprovado" WHERE id_sugestao = ?', [sugestaoId]);
+
+        await connection.commit();
+        res.json({ message: 'Sugestão aprovada e post-it criado com sucesso.' });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Erro ao aprovar sugestão:', error);
+        res.status(500).json({ error: error.message || 'Erro interno ao aprovar sugestão.' });
+    } finally {
+        connection.release();
+    }
+});
+
+// POST (Admin): Recusa uma sugestão
+app.post('/api/admin/sugestoes/:id/recusar', isAuthenticated, async (req, res) => {
+    try {
+        const sugestaoId = req.params.id;
+        await db.execute('UPDATE postit_sugestoes SET sug_status = "recusado" WHERE id_sugestao = ?', [sugestaoId]);
+        res.json({ message: 'Sugestão recusada com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao recusar sugestão:', error);
+        res.status(500).json({ error: 'Erro interno ao recusar sugestão.' });
     }
 });
 

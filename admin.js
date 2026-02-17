@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminMobileNavSelect = document.getElementById('admin-section-select');
     // Se você adicionar um botão de logout no seu admin.html com id="logout-btn", este código irá funcionar.
     const logoutBtn = document.getElementById('logout-btn');
+    let suggestionsEventSource = null; // Variável para a conexão SSE
+    let pendingSuggestions = []; // Cache para detalhes das sugestões
 
     // --- HELPER PARA ESCAPAR ATRIBUTOS HTML ---
     function escapeAttr(text) {
@@ -56,6 +58,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- LÓGICA DE ATUALIZAÇÃO EM TEMPO REAL (SSE) ---
+    function setupSuggestionStream() {
+        // Fecha qualquer conexão anterior para evitar duplicação
+        if (suggestionsEventSource) {
+            suggestionsEventSource.close();
+        }
+
+        // Inicia uma nova conexão SSE com o servidor
+        suggestionsEventSource = new EventSource('/api/admin/sugestoes-stream');
+
+        // Listener para quando uma mensagem é recebida do servidor
+        suggestionsEventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                // Verifica se a mensagem é sobre uma nova sugestão
+                if (data.type === 'new_suggestion') {
+                    console.log('Nova sugestão recebida! Atualizando a lista...');
+                    loadAdminSugestoes(); // Recarrega a lista de sugestões pendentes
+                }
+            } catch (error) {
+                console.error('Erro ao processar mensagem SSE:', error);
+            }
+        };
+
+        // Listener para erros na conexão
+        suggestionsEventSource.onerror = function(err) {
+            console.error('Erro na conexão SSE. A conexão será fechada.', err);
+            // O navegador tentará reconectar automaticamente por padrão.
+            // Se quisermos parar, podemos fechar aqui.
+            suggestionsEventSource.close();
+        };
+    }
+
     // --- DASHBOARD AND AUTH LOGIC ---
     function showDashboard() {
         loginModal.classList.remove('is-visible');
@@ -69,8 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAdminEvents();
         loadAdminRelogios();
         loadAdminTito(); // Nova função para a seção unificada
+        loadAdminSugestoes();
         loadGeneralSettings();
         setupPushNotificationForm(); // Adiciona o listener para o novo formulário
+
+        // Inicia a escuta por atualizações em tempo real
+        setupSuggestionStream();
         showSection(0); // Initialize to the first tab
     }
 
@@ -571,6 +610,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function loadAdminSugestoes() {
+        const tableBody = document.querySelector('#sugestoes-table tbody');
+        if (!tableBody) return;
+    
+        try {
+            const response = await fetch('/api/admin/sugestoes-pendentes');
+            if (!response.ok) throw new Error('Falha ao buscar sugestões');
+            const sugestoes = await response.json();
+            pendingSuggestions = sugestoes; // Armazena no cache
+    
+            tableBody.innerHTML = '';
+            if (sugestoes.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4">Nenhuma sugestão pendente.</td></tr>';
+                return;
+            }
+    
+            const formatDate = (dateString) => new Date(dateString).toLocaleString('pt-BR');
+    
+            sugestoes.forEach(item => {
+                const row = `
+                    <tr data-id="${item.id_sugestao}">
+                        <td data-label="Autor">${escapeAttr(item.sug_nome_autor)}</td>
+                        <td data-label="Conteúdo" class="truncate-cell" title="${escapeAttr(item.sug_conteudo)}">${escapeAttr(item.sug_conteudo)}</td>
+                        <td data-label="Data">${formatDate(item.sug_data_criacao)}</td>
+                        <td data-label="Ações">
+                            <button class="btn-view" data-id="${item.id_sugestao}" data-section="sugestoes">Ver</button>
+                            <button class="btn-approve" data-id="${item.id_sugestao}">Aprovar</button>
+                            <button class="btn-refuse" data-id="${item.id_sugestao}">Recusar</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+    
+        } catch (error) {
+            console.error('Erro ao carregar sugestões:', error);
+            tableBody.innerHTML = '<tr><td colspan="4">Erro ao carregar sugestões.</td></tr>';
+        }
+    }
+
     async function loadGeneralSettings() {
         const settingsSection = document.getElementById('general-section');
         if (!settingsSection) return;
@@ -702,11 +781,16 @@ document.addEventListener('DOMContentLoaded', () => {
         formModal.classList.add('is-visible');
         document.body.classList.add('modal-open');
 
-        dataForm.onsubmit = async (e) => {
-            e.preventDefault();
-            await submitHandler(e);
-            closeFormModal();
-        };
+        if (submitHandler) { // Check if a handler is provided
+            dataForm.onsubmit = async (e) => {
+                e.preventDefault();
+                await submitHandler(e);
+                closeFormModal();
+            };
+        } else {
+            // If no handler, just prevent default form submission and allow buttons inside to work
+            dataForm.onsubmit = (e) => e.preventDefault();
+        }
     }
 
     function closeFormModal() {
@@ -727,6 +811,80 @@ document.addEventListener('DOMContentLoaded', () => {
     adminDashboard.addEventListener('click', async (e) => {
         const target = e.target;
 
+        // Manual close button for view-only modals
+        if (target.classList.contains('modal-manual-close')) {
+            closeFormModal();
+            return;
+        }
+
+        // VIEW SUGGESTION
+        if (target.classList.contains('btn-view') && target.dataset.section === 'sugestoes') {
+            const id = target.dataset.id;
+            const suggestion = pendingSuggestions.find(s => s.id_sugestao == id);
+            if (suggestion) {
+                const formatDate = (dateString) => new Date(dateString).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                const modalHtml = `
+                    <div class="form-group">
+                        <label>Autor da Sugestão</label>
+                        <p style="padding: 10px; background: #f4f4f4; border-radius: 5px; margin-top: 5px;">${escapeAttr(suggestion.sug_nome_autor)}</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Conteúdo Completo</label>
+                        <p style="padding: 10px; background: #f4f4f4; border-radius: 5px; margin-top: 5px; white-space: pre-wrap; word-wrap: break-word;">${escapeAttr(suggestion.sug_conteudo)}</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Data de Envio</label>
+                        <p style="padding: 10px; background: #f4f4f4; border-radius: 5px; margin-top: 5px;">${formatDate(suggestion.sug_data_criacao)}</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 25px;">
+                        <button type="button" class="btn btn-dark modal-manual-close">Fechar</button>
+                    </div>
+                `;
+                openFormModal('Detalhes da Sugestão', modalHtml, null);
+            }
+            return; // Stop further execution
+        }
+
+        // APROVAR SUGESTAO
+        if (target.classList.contains('btn-approve')) {
+            const id = target.dataset.id;
+            if (!id) return;
+            if (confirm('Aprovar esta sugestão? Um novo post-it será criado.')) {
+                try {
+                    const response = await fetch(`/api/admin/sugestoes/${id}/aprovar`, { method: 'POST' });
+                    if (!response.ok) throw new Error((await response.json()).error || 'Falha ao aprovar');
+                    
+                    // Recarrega as listas
+                    loadAdminSugestoes();
+                    const quadroId = document.getElementById('quadro-select').value;
+                    if (quadroId) {
+                        const selectedOption = document.querySelector(`#quadro-select option[value="${quadroId}"]`);
+                        const endDateString = selectedOption.dataset.endDate;
+                        const today = new Date(); today.setHours(0,0,0,0);
+                        const endDate = new Date(endDateString);
+                        const isEditable = endDate >= today;
+                        loadAdminPostitsForQuadro(quadroId, isEditable); // Recarrega post-its do quadro selecionado
+                    }
+                } catch (error) {
+                    alert(`Erro ao aprovar: ${error.message}`);
+                }
+            }
+        }
+
+        // RECUSAR SUGESTAO
+        if (target.classList.contains('btn-refuse')) {
+            const id = target.dataset.id;
+            if (!id) return;
+            if (confirm('Recusar esta sugestão?')) {
+                try {
+                    const response = await fetch(`/api/admin/sugestoes/${id}/recusar`, { method: 'POST' });
+                    if (!response.ok) throw new Error((await response.json()).error || 'Falha ao recusar');
+                    loadAdminSugestoes();
+                } catch (error) {
+                    alert(`Erro ao recusar: ${error.message}`);
+                }
+            }
+        }
         // Salvar Configurações Gerais
         if (target.id === 'save-general-settings') {
             handleGeneralSettingsSave();
@@ -1349,6 +1507,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
+            // Fecha a conexão de atualização em tempo real ao fazer logout
+            if (suggestionsEventSource) {
+                suggestionsEventSource.close();
+                console.log('Conexão SSE fechada ao fazer logout.');
+            }
             try {
                 await fetch('/api/logout', { method: 'POST' });
                 window.location.reload(); // Recarrega a página para mostrar o modal de login
