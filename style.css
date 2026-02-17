@@ -1211,9 +1211,17 @@ body.modal-open {
 
 /* --- Estilos para o Quadro Tito --- */
 
+.titus-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin: 0 5vw 30px; /* Alinha com a margem do quadro e adiciona espaço abaixo */
+}
+
 .titus-period-display {
     text-align: center;
-    margin-bottom: 20px;
     padding: 10px;
     background-color: var(--card-bg);
     border-radius: 8px;
@@ -1349,6 +1357,12 @@ body.modal-open {
 }
 
 @media (max-width: 768px) {
+    /* Centraliza o cabeçalho do quadro em telas menores */
+    .titus-header-container {
+        flex-direction: column;
+        justify-content: center;
+    }
+
     .titus-board {
         padding: 20px;
         border-width: 10px;
@@ -2224,4 +2238,94 @@ body.in-maintenance > footer {
     width: clamp(140px, 25vw, 200px); /* Tamanho responsivo para se ajustar à tela */
     height: auto; /* Mantém a proporção da imagem */
     margin-bottom: 20px;
+}
+
+/* --- Toast / Snackbar Notifications --- */
+#toast-container {
+    position: fixed;
+    top: 110px; /* Abaixo do header fixo */
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: none; /* Permite clicar através do container */
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start; /* Alinha ícone e texto no topo */
+    gap: 12px;
+    background-color: var(--primary-color);
+    color: var(--card-bg);
+    padding: 15px 40px 15px 20px; /* Mais espaço à direita para o botão de fechar */
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    min-width: 250px;
+    max-width: 350px;
+    position: relative;
+    pointer-events: all; /* Torna o toast clicável */
+}
+
+.toast-icon {
+    flex-shrink: 0;
+}
+
+.toast-icon svg {
+    width: 22px;
+    height: 22px;
+    margin-top: 1px; /* Ajuste fino de alinhamento vertical */
+}
+
+.toast p {
+    margin: 0;
+    padding: 0;
+    flex-grow: 1; /* Faz o texto ocupar o espaço restante */
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-close {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.7;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+/* Toast types */
+.toast.success { background-color: #28a745; }
+.toast.error { background-color: #dc3545; }
+.toast.info { background-color: #17a2b8; }
+
+@media (max-width: 600px) {
+    #toast-container {
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        align-items: stretch;
+    }
+    .toast {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }

@@ -1,6 +1,70 @@
 // Variável global para armazenar o agendamento (será preenchida pela API)
 let prayerSchedule = [];
 
+// --- Ícones para as notificações ---
+const toastIcons = {
+    success: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+    error: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+    info: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
+};
+
+// --- Toast Notification Function ---
+function showToast(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        console.error('Toast container not found! Make sure to call setupToastContainer().');
+        alert(message); // Fallback
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+
+    // Adiciona o ícone
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'toast-icon';
+    iconContainer.innerHTML = toastIcons[type] || toastIcons.info;
+    toast.appendChild(iconContainer);
+
+    const messageElement = document.createElement('p');
+    messageElement.textContent = message;
+
+    toast.appendChild(messageElement);
+    
+    const closeButton = document.createElement('button');
+    closeButton.className = 'toast-close';
+    closeButton.innerHTML = '&times;';
+    closeButton.setAttribute('aria-label', 'Fechar notificação');
+    toast.appendChild(closeButton);
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        setTimeout(() => toast.classList.add('show'), 10);
+    });
+
+    const timeoutId = setTimeout(() => {
+        toast.classList.remove('show');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    }, duration);
+
+    closeButton.addEventListener('click', () => {
+        clearTimeout(timeoutId);
+        toast.classList.remove('show');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    });
+}
+
+// --- Helper to create the container on load ---
+function setupToastContainer() {
+    if (document.getElementById('toast-container')) return;
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+}
+
 async function applyGlobalSettings() {
     try {
         const response = await fetch('/api/configuracoes');
@@ -357,7 +421,7 @@ function setupNewsModal() {
             })
             .catch(error => {
                 console.error('Erro ao carregar detalhes da notícia:', error);
-                alert('Não foi possível carregar os detalhes da notícia.');
+                showToast('Não foi possível carregar os detalhes da notícia.', 'error');
             });
     });
 
@@ -453,15 +517,15 @@ function setupContactForm() {
             } else {
                 response.json().then(data => {
                     const errorMessage = data.errors ? data.errors.map(e => e.message).join(', ') : 'Ocorreu um erro. Tente novamente.';
-                    alert(`Erro ao enviar: ${errorMessage}`);
+                    showToast(`Erro ao enviar: ${errorMessage}`, 'error');
                 }).catch(() => {
-                    alert('Ocorreu um erro ao processar a resposta do servidor.');
+                    showToast('Ocorreu um erro ao processar a resposta do servidor.', 'error');
                 });
             }
         })
         .catch(error => {
             console.error('Fetch Error:', error);
-            alert('Ocorreu um erro de rede. Verifique sua conexão e tente novamente.');
+            showToast('Ocorreu um erro de rede. Verifique sua conexão e tente novamente.', 'error');
         })
         .finally(() => {
             submitButton.textContent = originalButtonText;
@@ -537,7 +601,7 @@ function setupPixCopy() {
 
             const copyFailure = (err) => {
                 console.error('Falha ao copiar a chave PIX:', err);
-                alert('Não foi possível copiar a chave. Por favor, copie manualmente.');
+                showToast('Não foi possível copiar a chave. Por favor, copie manualmente.', 'error');
             };
 
             // --- Copy logic with fallback for mobile/older browsers ---
@@ -820,10 +884,10 @@ async function loadTitusBoard() {
         const { board, postIts } = await response.json();
         titusGrid.innerHTML = ''; // Limpa conteúdo
 
-        // Remove o display de período anterior, se houver
-        const existingPeriodDisplay = document.querySelector('.titus-period-container');
-        if (existingPeriodDisplay) {
-            existingPeriodDisplay.remove();
+        // Remove o container de cabeçalho anterior, se houver
+        const existingHeader = document.querySelector('.titus-header-container');
+        if (existingHeader) {
+            existingHeader.remove();
         }
 
         if (!board) {
@@ -831,28 +895,21 @@ async function loadTitusBoard() {
             return;
         }
 
-        // Exibe o período do quadro do lado de fora
+        // Cria o container para o cabeçalho do quadro (período e botão)
+        const headerContainer = document.createElement('div');
+        headerContainer.className = 'titus-header-container';
+
         const formatDate = (dateString) => {
             if (!dateString) return '';
             const date = new Date(dateString);
             // Adjust for timezone to show the correct local date
             return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         };
-        const periodContainer = document.createElement('div');
-        periodContainer.className = 'titus-period-container';
-        periodContainer.style.textAlign = 'center';
-        periodContainer.style.marginBottom = '30px';
-        periodContainer.innerHTML = `<div class="titus-period-display"><strong>Período ativo:</strong> ${formatDate(board.qdt_data_inicial)} a ${formatDate(board.qdt_data_final)}</div>`;
-        titusBoard.parentNode.insertBefore(periodContainer, titusBoard);
-
-        // Adiciona o botão para sugerir post-it
-        const suggestionButtonContainer = document.createElement('div');
-        suggestionButtonContainer.style.textAlign = 'left';
-        suggestionButtonContainer.style.marginBottom = '20px';
-        suggestionButtonContainer.style.paddingLeft = '5vw'; // Alinha o botão com a margem do quadro
-        suggestionButtonContainer.innerHTML = `<button id="open-suggestion-modal" class="btn btn-primary">Inserir Post-it</button>`;
-        // Insere o botão antes do quadro de cortiça
-        titusBoard.parentNode.insertBefore(suggestionButtonContainer, titusBoard);
+        headerContainer.innerHTML = `
+            <div class="titus-period-display"><strong>Período ativo:</strong> ${formatDate(board.qdt_data_inicial)} a ${formatDate(board.qdt_data_final)}</div>
+            <button id="open-suggestion-modal" class="btn btn-primary">Inserir Post-it</button>
+        `;
+        titusBoard.parentNode.insertBefore(headerContainer, titusBoard);
 
         if (postIts.length === 0) {
             titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Nenhum post-it cadastrado para este período.</p>';
@@ -1089,11 +1146,11 @@ function setupTitusSuggestionModal() {
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || 'Erro no servidor');
             
-            alert(result.message);
+            showToast(result.message, 'success');
             closeModal();
 
         } catch (error) {
-            alert(`Erro ao enviar sugestão: ${error.message}`);
+            showToast(`Erro ao enviar sugestão: ${error.message}`, 'error');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
@@ -1232,12 +1289,12 @@ function setupPushNotifications() {
                 body: JSON.stringify(subscription)
             });
 
-            alert('Inscrição para notificações realizada com sucesso!');
+            showToast('Inscrição para notificações realizada com sucesso!', 'success');
             notificationBtn.style.display = 'none'; // Esconde o botão após a inscrição
 
         } catch (error) {
             console.error('Falha ao se inscrever para notificações push:', error);
-            alert('Não foi possível ativar as notificações. Por favor, tente novamente.');
+            showToast('Não foi possível ativar as notificações. Por favor, tente novamente.', 'error');
         }
     }
 
@@ -1246,7 +1303,7 @@ function setupPushNotifications() {
             if (permission === 'granted') {
                 subscribeUserToPush();
             } else {
-                alert('Você precisa permitir as notificações para receber alertas.');
+                showToast('Você precisa permitir as notificações para receber alertas.', 'info');
             }
         });
     });
@@ -1277,6 +1334,7 @@ function setupServiceWorker() {
     const inMaintenance = await applyGlobalSettings();
     if (inMaintenance) return; // Para a execução do script se a página estiver em manutenção
 
+    setupToastContainer(); // Adiciona o container para as notificações
     updateFooter();
     setupHamburgerMenu();
     setupScrollAnimations();
