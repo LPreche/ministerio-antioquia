@@ -2113,6 +2113,22 @@ body.modal-open {
     background-color: #c82333;
 }
 
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+    text-transform: capitalize;
+}
+.status-badge.status-approved {
+    background-color: #28a745; /* Verde (igual ao botão de aprovar) */
+}
+.status-badge.status-refused {
+    background-color: #dc3545; /* Vermelho (igual ao botão de recusar) */
+}
+
 /* Garante que o botão de deletar dentro de um modal se pareça com os outros botões principais */
 #form-modal .btn-delete {
     padding: 12px 25px;
@@ -2132,18 +2148,51 @@ body.modal-open {
 @media (max-width: 768px) {
     .admin-table thead { display: none; }
 
-    /* Esconde a navegação de abas e mostra o select no admin */
     .admin-tabs-nav {
         display: none;
     }
     .admin-mobile-nav {
         display: block;
     }
-    .admin-table tr { display: block; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
-    .admin-table td { display: block; text-align: right; border-bottom: 1px dotted #ccc; padding-left: 50%; position: relative; }
-    .admin-table td:before { content: attr(data-label); position: absolute; left: 15px; width: calc(50% - 30px); padding-right: 10px; white-space: nowrap; text-align: left; font-weight: bold; }
+    .admin-table tr { 
+        display: block; 
+        margin-bottom: 20px; 
+        border: 1px solid #ddd; 
+        border-radius: 8px; 
+        padding: 15px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .admin-table td { 
+        display: block; 
+        text-align: left; 
+        border-bottom: 1px dotted #ccc; 
+        padding: 12px 0;
+    }
+    .admin-table td:before { 
+        content: attr(data-label);
+        display: block;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 8px; /* Espaço entre a nova linha e o conteúdo */
+        padding-bottom: 8px; /* Espaço entre o texto do label e a nova linha */
+        border-bottom: 1px dotted #ccc; /* Adiciona a linha divisória interna */
+    }
     .admin-table td:last-child { border-bottom: 0; }
-    .admin-table td[data-label="Ações"] { justify-content: flex-end; }
+    .admin-table td[data-label="Ações"] { 
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-top: 15px;
+        margin-top: 10px;
+        border-bottom: none; /* Garante que não haja borda inferior */
+    }
+    .admin-table td[data-label="Ações"]::before { display: none; }
+    .admin-table td.truncate-cell {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        max-width: 100%;
+    }
 }
 
 @media (max-width: 600px) {

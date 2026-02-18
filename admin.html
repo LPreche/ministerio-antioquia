@@ -12,6 +12,7 @@
     <meta name="theme-color" content="#3E260E">
     <!-- iOS specific tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Admin Antioquia">
     <link rel="apple-touch-icon" href="imagens/icons/icon-192x192.png">
@@ -29,11 +30,11 @@
                 <form id="login-form" style="width: 100%;">
                     <div class="form-group">
                         <label for="username" style="text-align: left;">Usuário</label>
-                        <input type="text" id="username" name="username" required>
+                        <input type="text" id="username" name="username" required autocomplete="username">
                     </div>
                     <div class="form-group">
                         <label for="password" style="text-align: left;">Senha</label>
-                        <input type="password" id="password" name="password" required>
+                        <input type="password" id="password" name="password" required autocomplete="current-password">
                     </div>
                     <p id="login-error" style="color: red; display: none;"></p>
                     <div class="form-button-group">
@@ -269,6 +270,27 @@
                                 </thead>
                                 <tbody>
                                     <tr><td colspan="4">Carregando sugestões...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 40px 0 25px;">
+
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">SUGESTÕES ANTERIORES</h4>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="sugestoes-anteriores-table">
+                                <thead>
+                                    <tr>
+                                        <th>Autor</th>
+                                        <th>Conteúdo Sugerido</th>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="4">Carregando histórico de sugestões...</td></tr>
                                 </tbody>
                             </table>
                         </div>

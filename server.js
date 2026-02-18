@@ -958,6 +958,22 @@ app.get('/api/admin/sugestoes-pendentes', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET (Admin): Retorna o histórico de sugestões (aprovadas/recusadas)
+app.get('/api/admin/sugestoes-historico', isAuthenticated, async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            `SELECT id_sugestao, sug_nome_autor, sug_conteudo, sug_data_criacao, sug_status 
+             FROM postit_sugestoes
+             WHERE sug_status IN ('aprovado', 'recusado')
+             ORDER BY sug_data_criacao DESC`
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Erro ao buscar histórico de sugestões:', error);
+        res.status(500).json({ error: 'Erro ao buscar histórico de sugestões.' });
+    }
+});
+
 // POST (Admin): Aprova uma sugestão
 app.post('/api/admin/sugestoes/:id/aprovar', isAuthenticated, async (req, res) => {
     const sugestaoId = req.params.id;

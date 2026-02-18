@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAdminRelogios();
         loadAdminTito(); // Nova função para a seção unificada
         loadAdminSugestoes();
+        loadAdminSugestoesHistorico();
         loadGeneralSettings();
         setupPushNotificationForm(); // Adiciona o listener para o novo formulário
 
@@ -499,9 +500,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || 'Erro no servidor');
             }
             // Recarrega a lista de motivos para o relógio selecionado
-            const relogioId = document.getElementById('relogio-select').value;
+            const select = document.getElementById('relogio-select');
+            const relogioId = select.value;
             if (relogioId) {
-                loadAdminMotivosOracao(relogioId);
+                const selectedOption = select.options[select.selectedIndex];
+                const relogioDateString = selectedOption.dataset.date;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const relogioDate = new Date(relogioDateString);
+                const correctedRelogioDate = new Date(relogioDate.getTime() + relogioDate.getTimezoneOffset() * 60000);
+                correctedRelogioDate.setHours(0, 0, 0, 0);
+
+                const isEditable = correctedRelogioDate >= today;
+                loadAdminMotivosOracao(relogioId, isEditable);
             }
         } catch (error) {
             console.error('Error submitting prayer request form:', error);
@@ -647,6 +660,47 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Erro ao carregar sugestões:', error);
             tableBody.innerHTML = '<tr><td colspan="4">Erro ao carregar sugestões.</td></tr>';
+        }
+    }
+
+    async function loadAdminSugestoesHistorico() {
+        const tableBody = document.querySelector('#sugestoes-anteriores-table tbody');
+        if (!tableBody) {
+            console.error("A tabela de histórico de sugestões (id: #sugestoes-anteriores-table) não foi encontrada. Verifique se o arquivo 'admin.html' foi atualizado com o código da seção 'Sugestões Anteriores'.");
+            return;
+        }
+    
+        try {
+            const response = await fetch('/api/admin/sugestoes-historico');
+            if (!response.ok) throw new Error('Falha ao buscar histórico de sugestões');
+            const sugestoes = await response.json();
+    
+            tableBody.innerHTML = '';
+            if (sugestoes.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4">Nenhum histórico de sugestões encontrado.</td></tr>';
+                return;
+            }
+    
+            const formatDate = (dateString) => new Date(dateString).toLocaleString('pt-BR');
+    
+            sugestoes.forEach(item => {
+                const statusClass = item.sug_status === 'aprovado' ? 'status-approved' : 'status-refused';
+                const statusText = item.sug_status.charAt(0).toUpperCase() + item.sug_status.slice(1); // Capitalize
+
+                const row = `
+                    <tr data-id="${item.id_sugestao}">
+                        <td data-label="Autor">${escapeAttr(item.sug_nome_autor)}</td>
+                        <td data-label="Conteúdo Sugerido" class="truncate-cell" title="${escapeAttr(item.sug_conteudo)}">${escapeAttr(item.sug_conteudo)}</td>
+                        <td data-label="Data">${formatDate(item.sug_data_criacao)}</td>
+                        <td data-label="Status"><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+    
+        } catch (error) {
+            console.error('Erro ao carregar histórico de sugestões:', error);
+            tableBody.innerHTML = '<tr><td colspan="4">Erro ao carregar histórico de sugestões.</td></tr>';
         }
     }
 
@@ -811,16 +865,17 @@ document.addEventListener('DOMContentLoaded', () => {
     adminDashboard.addEventListener('click', async (e) => {
         const target = e.target;
 
-        // Manual close button for view-only modals
-        if (target.classList.contains('modal-manual-close')) {
-            closeFormModal();
-            return;
-        }
-
         // VIEW SUGGESTION
         if (target.classList.contains('btn-view') && target.dataset.section === 'sugestoes') {
             const id = target.dataset.id;
-            const suggestion = pendingSuggestions.find(s => s.id_sugestao == id);
+            let suggestion = pendingSuggestions.find(s => s.id_sugestao == id);
+
+            // Se a sugestão não for encontrada no cache, atualiza a lista e tenta novamente.
+            if (!suggestion) {
+                await loadAdminSugestoes();
+                suggestion = pendingSuggestions.find(s => s.id_sugestao == id);
+            }
+
             if (suggestion) {
                 const formatDate = (dateString) => new Date(dateString).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
                 const modalHtml = `
@@ -841,6 +896,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 openFormModal('Detalhes da Sugestão', modalHtml, null);
+                dataForm.querySelector('.modal-manual-close').addEventListener('click', closeFormModal);
+            } else {
+                // Se ainda não for encontrada após a atualização, informa o usuário.
+                alert('Não foi possível encontrar os detalhes da sugestão. A lista foi atualizada, por favor, verifique se a sugestão ainda está pendente.');
             }
             return; // Stop further execution
         }
@@ -856,6 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Recarrega as listas
                     loadAdminSugestoes();
+                    loadAdminSugestoesHistorico();
                     const quadroId = document.getElementById('quadro-select').value;
                     if (quadroId) {
                         const selectedOption = document.querySelector(`#quadro-select option[value="${quadroId}"]`);
@@ -880,6 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(`/api/admin/sugestoes/${id}/recusar`, { method: 'POST' });
                     if (!response.ok) throw new Error((await response.json()).error || 'Falha ao recusar');
                     loadAdminSugestoes();
+                    loadAdminSugestoesHistorico();
                 } catch (error) {
                     alert(`Erro ao recusar: ${error.message}`);
                 }
@@ -1293,15 +1354,66 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                     case 'prayer-clock':
                         url = `/api/voluntarios/${id}`;
-                        loadFunction = () => loadAdminPrayerClock(document.getElementById('relogio-select').value); // Deleta voluntário
+                        loadFunction = () => {
+                            const select = document.getElementById('relogio-select');
+                            const relogioId = select.value;
+                            if (!relogioId) return;
+
+                            const selectedOption = select.options[select.selectedIndex];
+                            const relogioDateString = selectedOption.dataset.date;
+
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            
+                            const relogioDate = new Date(relogioDateString);
+                            const correctedRelogioDate = new Date(relogioDate.getTime() + relogioDate.getTimezoneOffset() * 60000);
+                            correctedRelogioDate.setHours(0, 0, 0, 0);
+
+                            const isEditable = correctedRelogioDate >= today;
+                            loadAdminPrayerClock(relogioId, isEditable);
+                        };
                         break;
                     case 'motivos-oracao':
                         url = `/api/motivos-oracao/${id}`;
-                        loadFunction = () => loadAdminMotivosOracao(document.getElementById('relogio-select').value);
+                        loadFunction = () => {
+                            const select = document.getElementById('relogio-select');
+                            const relogioId = select.value;
+                            if (!relogioId) return;
+
+                            const selectedOption = select.options[select.selectedIndex];
+                            const relogioDateString = selectedOption.dataset.date;
+
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            
+                            const relogioDate = new Date(relogioDateString);
+                            const correctedRelogioDate = new Date(relogioDate.getTime() + relogioDate.getTimezoneOffset() * 60000);
+                            correctedRelogioDate.setHours(0, 0, 0, 0);
+
+                            const isEditable = correctedRelogioDate >= today;
+                            loadAdminMotivosOracao(relogioId, isEditable);
+                        };
                         break;
                     case 'postits':
                         url = `/api/postits/${id}`;
-                        loadFunction = () => loadAdminPostitsForQuadro(document.getElementById('quadro-select').value);
+                        loadFunction = () => {
+                            const select = document.getElementById('quadro-select');
+                            const quadroId = select.value;
+                            if (!quadroId) return;
+
+                            const selectedOption = select.options[select.selectedIndex];
+                            const endDateString = selectedOption.dataset.endDate;
+                            
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            
+                            const endDate = new Date(endDateString);
+                            const correctedEndDate = new Date(endDate.getTime() + endDate.getTimezoneOffset() * 60000);
+                            correctedEndDate.setHours(0, 0, 0, 0);
+
+                            const isEditable = correctedEndDate >= today;
+                            loadAdminPostitsForQuadro(quadroId, isEditable);
+                        };
                         break;
                     default:
                         return;
@@ -1431,9 +1543,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || 'Erro no servidor');
             }
             // Recarrega a lista de voluntários para o relógio selecionado
-            const relogioId = document.getElementById('relogio-select').value;
+            const select = document.getElementById('relogio-select');
+            const relogioId = select.value;
             if (relogioId) {
-                loadAdminPrayerClock(relogioId);
+                const selectedOption = select.options[select.selectedIndex];
+                const relogioDateString = selectedOption.dataset.date;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const relogioDate = new Date(relogioDateString);
+                const correctedRelogioDate = new Date(relogioDate.getTime() + relogioDate.getTimezoneOffset() * 60000);
+                correctedRelogioDate.setHours(0, 0, 0, 0);
+
+                const isEditable = correctedRelogioDate >= today;
+                loadAdminPrayerClock(relogioId, isEditable);
             }
         } catch (error) {
             console.error('Error submitting prayer clock form:', error);
@@ -1492,8 +1616,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Erro no servidor');
             }
-            const quadroId = document.getElementById('quadro-select').value;
-            if (quadroId) loadAdminPostitsForQuadro(quadroId);
+            const select = document.getElementById('quadro-select');
+            const quadroId = select.value;
+            if (quadroId) {
+                const selectedOption = select.options[select.selectedIndex];
+                const endDateString = selectedOption.dataset.endDate;
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const endDate = new Date(endDateString);
+                const correctedEndDate = new Date(endDate.getTime() + endDate.getTimezoneOffset() * 60000);
+                correctedEndDate.setHours(0, 0, 0, 0);
+
+                const isEditable = correctedEndDate >= today;
+                loadAdminPostitsForQuadro(quadroId, isEditable);
+            }
         } catch (error) {
             console.error('Error submitting postit form:', error);
             alert(`Erro ao salvar: ${error.message}`);
