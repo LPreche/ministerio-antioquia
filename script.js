@@ -65,6 +65,41 @@ function setupToastContainer() {
     document.body.appendChild(container);
 }
 
+// --- Editor.js Data Renderer ---
+function renderEditorJSData(editorData) {
+    if (!editorData || !Array.isArray(editorData.blocks) || editorData.blocks.length === 0) {
+        return '';
+    }
+
+    let html = '';
+    editorData.blocks.forEach(block => {
+        switch (block.type) {
+            case 'header':
+                html += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
+                break;
+            case 'paragraph':
+                html += `<p>${block.data.text}</p>`;
+                break;
+            case 'list':
+                const listTag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                html += `<${listTag}>`;
+                block.data.items.forEach(item => {
+                    html += `<li>${item}</li>`;
+                });
+                html += `</${listTag}>`;
+                break;
+            case 'image': // Corresponds to SimpleImage plugin
+                html += `<figure class="editor-js-image"><img src="${block.data.url}" alt="${block.data.caption || ''}"><figcaption>${block.data.caption || ''}</figcaption></figure>`;
+                break;
+            // Add other block types here as needed
+            default:
+                console.log('Unknown block type:', block.type);
+                break;
+        }
+    });
+    return html;
+}
+
 async function applyGlobalSettings() {
     try {
         const response = await fetch('/api/configuracoes');
@@ -186,10 +221,17 @@ function setupMissionaryModal() {
         const longDesc = card.dataset.longDesc;
         const btnText = card.dataset.btnText;
         const btnLink = card.dataset.btnLink;
-
-        modalName.textContent = name;
-        modalDescription.innerHTML = longDesc || ''; // Use innerHTML for potential HTML content
-        modalImg.alt = `Foto de ${name}`;
+        
+        let descriptionHtml = '';
+        if (longDesc) {
+            try {
+                const editorData = JSON.parse(longDesc);
+                descriptionHtml = renderEditorJSData(editorData);
+            } catch (e) {
+                descriptionHtml = longDesc; // Fallback for old HTML or plain text
+            }
+        }
+        modalDescription.innerHTML = descriptionHtml;
 
         if (imgSrc) {
             modalImg.src = imgSrc;
@@ -393,7 +435,17 @@ function setupNewsModal() {
             })
             .then(item => {
                 modalTitle.textContent = item.ntc_titulo;
-                modalFullStory.innerHTML = item.ntc_corpo_mensagem; // Isso renderizará o HTML corretamente
+
+                let storyHtml = '';
+                if (item.ntc_corpo_mensagem) {
+                    try {
+                        const editorData = JSON.parse(item.ntc_corpo_mensagem);
+                        storyHtml = renderEditorJSData(editorData); // Use the new renderer
+                    } catch (e) {
+                        storyHtml = item.ntc_corpo_mensagem; // Fallback for old HTML content
+                    }
+                }
+                modalFullStory.innerHTML = storyHtml;
 
                 let dataFormatada = '';
                 if (item.ntc_data_publicacao) {
@@ -783,11 +835,24 @@ async function loadNews() {
                 dataFormatada = data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
             }
 
-            // 2. Gerar Preview do Texto (remove tags HTML e corta) // ntc_corpo_mensagem
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = noticia.ntc_corpo_mensagem;
-            let textoPuro = tempDiv.textContent || tempDiv.innerText || '';
-            let previewText = textoPuro.length > 150 ? textoPuro.substring(0, 150) + '...' : textoPuro;
+            // 2. Gerar Preview do Texto
+            let textoPuro = '';
+            if (noticia.ntc_corpo_mensagem) {
+                try {
+                    const editorData = JSON.parse(noticia.ntc_corpo_mensagem);
+                    // Junta o texto de todos os blocos para criar um preview
+                    textoPuro = editorData.blocks.map(block => {
+                        if (block.type === 'list') return block.data.items.join(' ');
+                        return block.data.text || '';
+                    }).join(' ').trim();
+                } catch (e) {
+                    // Fallback para conteúdo antigo em HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = noticia.ntc_corpo_mensagem;
+                    textoPuro = tempDiv.textContent || tempDiv.innerText || '';
+                }
+            }
+            const previewText = textoPuro.length > 150 ? textoPuro.substring(0, 150) + '...' : textoPuro;
 
             // 3. Criar Elemento HTML
             const card = document.createElement('div');
@@ -836,20 +901,29 @@ async function loadMissionaries() {
             card.className = 'missionary-card animate-on-scroll is-visible';
             // Set data attributes for the modal // mis_imagem_url, mis_descricao_longa
             card.dataset.name = missionary.nome; // nome é o CONCAT(mis_primeiro_nome, mis_sobrenome)
-            card.dataset.imgSrc = missionary.mis_imagem_url; // mis_imagem_url
+            card.dataset.imgSrc = missionary.mis_imagem_url;
             card.dataset.longDesc = missionary.mis_historia; // mis_historia
 
             // Simple logic to get country code for flag // mis_pais
             const countryCode = countryCodeMap[missionary.mis_pais.toLowerCase()] || missionary.mis_pais.toLowerCase().slice(0, 2);
 
-            // Use mis_descricao for the short description on the card
-            let shortDesc = missionary.mis_descricao || '';
-            // If mis_descricao is too long, truncate it
-            if (shortDesc.length > 150) {
-                shortDesc = shortDesc.substring(0, 147) + '...';
-            } else if (shortDesc.length === 0 && missionary.mis_historia) { // Fallback if mis_descricao is empty but mis_historia exists
-                shortDesc = missionary.mis_historia.substring(0, Math.min(missionary.mis_historia.length, 147)) + (missionary.mis_historia.length > 147 ? '...' : '');
+            // Gera a descrição curta a partir do JSON ou HTML
+            let shortDescText = '';
+            if (missionary.mis_descricao) {
+                try {
+                    const editorData = JSON.parse(missionary.mis_descricao);
+                    shortDescText = editorData.blocks.map(block => {
+                        if (block.type === 'list') return block.data.items.join(' ');
+                        return block.data.text || '';
+                    }).join(' ').trim();
+                } catch (e) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = missionary.mis_descricao;
+                    shortDescText = tempDiv.textContent || tempDiv.innerText || '';
+                }
             }
+            // Trunca se necessário
+            if (shortDescText.length > 150) shortDescText = shortDescText.substring(0, 147) + '...';
 
             card.innerHTML = `
                 <div class="missionary-flag">
@@ -859,7 +933,7 @@ async function loadMissionaries() {
                     <img src="${missionary.mis_imagem_url || ''}" alt="Foto de ${missionary.nome}">
                 </div>
                 <h4>${missionary.nome}</h4>
-                <p>${shortDesc}</p>
+                <p>${shortDescText}</p>
             `;
             
             grid.appendChild(card);

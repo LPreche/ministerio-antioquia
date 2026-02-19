@@ -1,6 +1,6 @@
 // c:\github\ministerio-antioquia\sw.js
 
-const CACHE_NAME = 'movimento-antioquia-cache-v2'; // Versão do cache incrementada
+const CACHE_NAME = 'movimento-antioquia-cache-v3'; // Versão do cache incrementada para limpar caches antigos
 // Lista de arquivos essenciais para o funcionamento offline do app
 const urlsToCache = [
   '/',
@@ -44,15 +44,16 @@ self.addEventListener('fetch', event => {
 
   event.respondWith(
     fetch(event.request).then(networkResponse => {
-      // Se a requisição à rede for bem-sucedida, clona a resposta.
-      // Uma resposta só pode ser consumida uma vez, então precisamos cloná-la
-      // para enviá-la tanto ao navegador quanto ao cache.
-      const responseToCache = networkResponse.clone();
-
-      caches.open(CACHE_NAME).then(cache => {
-        cache.put(event.request, responseToCache); // Atualiza o cache com a nova versão
-      });
-
+      // Apenas faz cache de respostas bem-sucedidas (status 2xx).
+      // Respostas de erro (como 404 Not Found) não serão salvas no cache.
+      // Isso evita que uma falha temporária de rede ou um link quebrado
+      // fique "preso" no cache do usuário.
+      if (networkResponse && networkResponse.ok) {
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
+      }
       return networkResponse; // Retorna a resposta da rede para o navegador
     }).catch(() => {
       // Se a requisição à rede falhar, tenta encontrar no cache.

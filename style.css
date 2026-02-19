@@ -2378,3 +2378,16 @@ body.in-maintenance > footer {
         box-sizing: border-box;
     }
 }
+
+/* --- Estilos para o container do Editor.js --- */
+.editorjs-container {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 15px;
+    background-color: #fff;
+    min-height: 200px;
+}
+.editorjs-container:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(62, 38, 14, 0.2);
+}
