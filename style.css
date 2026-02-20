@@ -856,6 +856,7 @@ footer p {
     font-size: 1rem;
     margin-bottom: 0;
     flex-grow: 1;
+    text-align: justify;
 }
 
 .missionary-flag {
@@ -1001,19 +1002,19 @@ body.modal-open {
 }
 
 .modal-body {
-    display: flex;
-    gap: 30px;
-    align-items: flex-start;
+    overflow: auto; /* Garante que o container "limpe" o float da imagem */
 }
 
 .modal-image-container {
-    flex: 0 0 200px;
+    float: left;
     width: 200px;
     height: 200px;
+    margin-top: 25px; /* Ajuste vertical da imagem no modal */
+    margin-right: 30px; /* Espaço entre a imagem e o texto */
+    margin-bottom: 15px; /* Espaço abaixo da imagem, para o texto que flui */
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    flex-shrink: 0;
     background-color: #e9e9e9;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23A8A9AD'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E");
     background-size: 50%;
@@ -1026,13 +1027,11 @@ body.modal-open {
 .modal-image-container img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    border-radius: 8px;
+    object-fit: cover; /* Faz a imagem cobrir todo o container, sem distorcer */
 }
 
 .modal-text-container {
-    flex: 1;
-    text-align: left;
+    text-align: center; /* Centraliza o conteúdo (como o botão) por padrão */
 }
 
 #modal-name {
@@ -1041,6 +1040,7 @@ body.modal-open {
     font-size: 2.2rem;
     color: var(--primary-color);
     margin-bottom: 15px;
+    text-align: left; /* Garante que o título permaneça à esquerda */
 }
 
 .modal-body .btn {
@@ -1075,15 +1075,19 @@ body.modal-open {
         padding: 25px;
     }
     .modal-body {
+        display: flex; /* Re-adiciona o flex para o layout de coluna */
         flex-direction: column;
         align-items: center;
         text-align: center;
     }
     .modal-image-container {
+        float: none; /* Remove o float no layout mobile */
         width: 100%;
         height: auto;
         max-width: 250px;
         margin-bottom: 20px;
+        margin-top: 0; /* Reseta a margem do topo no mobile */
+        margin-right: 0; /* Remove a margem direita no mobile */
     }
     .modal-image-container img {
         aspect-ratio: 1 / 1;
@@ -2377,17 +2381,4 @@ body.in-maintenance > footer {
         width: 100%;
         box-sizing: border-box;
     }
-}
-
-/* --- Estilos para o container do Editor.js --- */
-.editorjs-container {
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 15px;
-    background-color: #fff;
-    min-height: 200px;
-}
-.editorjs-container:focus-within {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(62, 38, 14, 0.2);
 }

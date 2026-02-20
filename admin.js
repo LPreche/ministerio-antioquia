@@ -474,9 +474,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const select = document.getElementById('relogio-select');
             select.value = newOrUpdatedId; // Mantém o relógio selecionado após a edição/criação
             select.dispatchEvent(new Event('change')); // Dispara o evento para carregar os voluntários
+            return true;
         } catch (error) {
             console.error('Error submitting relogio form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
 
@@ -516,9 +518,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isEditable = correctedRelogioDate >= today;
                 loadAdminMotivosOracao(relogioId, isEditable);
             }
+            return true;
         } catch (error) {
             console.error('Error submitting prayer request form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
 
@@ -807,15 +811,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function initializeTinyMCE() {
+    function initializeTinyMCE(selectors) {
         tinymce.init({
-            selector: '#ntc_corpo_mensagem',
+            selector: selectors,
             plugins: 'lists link image media table code help wordcount',
             toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image | code',
             height: 350,
             menubar: false,
             language: 'pt_BR',
-            language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n@23.10.30/langs6/pt_BR.js', // Garante a tradução
+            // A URL do idioma é removida, pois o TinyMCE Cloud (ativado pela API Key) carrega o idioma automaticamente.
             content_style: 'body { font-family:Roboto,sans-serif; font-size:14px }',
             setup: function(editor) {
                 editor.on('init', function() { this.focus(); });
@@ -838,8 +842,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (submitHandler) { // Check if a handler is provided
             dataForm.onsubmit = async (e) => {
                 e.preventDefault();
-                await submitHandler(e);
-                closeFormModal();
+                // O handler agora retorna true/false para indicar sucesso
+                const success = await submitHandler(e);
+                if (success) {
+                    closeFormModal();
+                }
+                // Se não houver sucesso, o modal permanece aberto para o usuário corrigir.
             };
         } else {
             // If no handler, just prevent default form submission and allow buttons inside to work
@@ -849,14 +857,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeFormModal() {
         // Remove qualquer instância ativa do TinyMCE para evitar conflitos
-        const editor = tinymce.get('ntc_corpo_mensagem');
-        if (editor) {
-            editor.remove();
+        try {
+            // O método `destroy()` é mais seguro que `remove()` quando o elemento do formulário
+            // será completamente removido do DOM. Ele apenas limpa o editor da memória.
+            // O loop `while` garante que todos os editores sejam destruídos, e a verificação
+            // previne erros caso o objeto `tinymce` não esteja como esperado.
+            if (window.tinymce && tinymce.editors) {
+                while (tinymce.editors.length > 0) {
+                    tinymce.editors[0].destroy();
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao remover o editor TinyMCE:", err);
         }
         formModal.classList.remove('is-visible');
         document.body.classList.remove('modal-open');
-        dataForm.innerHTML = '';
-        dataForm.onsubmit = null;
+
+        // Adia a limpeza do formulário para o próximo ciclo de eventos da UI (usando setTimeout com 0ms).
+        // Isso evita uma "condição de corrida" em que o DOM é limpo antes que o TinyMCE
+        // possa concluir seu próprio processo de limpeza, o que causava a falha na reinicialização.
+        setTimeout(() => {
+            dataForm.innerHTML = '';
+            dataForm.onsubmit = null;
+        }, 0);
     }
 
     modalCloseBtn.addEventListener('click', closeFormModal);
@@ -1092,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 openFormModal('Adicionar Nova Notícia', formHtml, handleNewsSubmit);
-                initializeTinyMCE();
+                initializeTinyMCE('#ntc_corpo_mensagem');
             }
             if (section === 'missionaries') {
                 const formHtml = `
@@ -1110,6 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 openFormModal('Adicionar Novo Missionário', formHtml, handleMissionarySubmit);
+                initializeTinyMCE('#mis_descricao, #mis_historia');
             }
             if (section === 'events') {
                 const formHtml = `
@@ -1210,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                     openFormModal('Editar Notícia', formHtml, handleNewsSubmit);
-                    initializeTinyMCE();
+                    initializeTinyMCE('#ntc_corpo_mensagem');
                 } catch(error) {
                     console.error('Error fetching news item for edit:', error);
                     alert('Não foi possível carregar os dados para edição.');
@@ -1237,6 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                     openFormModal('Editar Missionário', formHtml, handleMissionarySubmit);
+                    initializeTinyMCE('#mis_descricao, #mis_historia');
                 } catch(error) {
                     console.error('Error fetching missionary for edit:', error);
                     alert('Não foi possível carregar os dados para edição.');
@@ -1434,15 +1459,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleNewsSubmit(e) {
         const form = e.target;
         const formData = new FormData(form);
-        
-        // Coleta os dados diretamente dos elementos do formulário para maior robustez
-        const data = {
-            id_noticia: form.querySelector('[name="id_noticia"]').value,
-            ntc_titulo: document.getElementById('ntc_titulo').value,
-            ntc_corpo_mensagem: '', // Será preenchido pelo TinyMCE
-            ntc_data_publicacao: document.getElementById('ntc_data_publicacao').value,
-            ntc_imagem_fundo: document.getElementById('ntc_imagem_fundo').value
-        };
+        const data = Object.fromEntries(formData.entries());
         const id = data.id_noticia;
         
         // Pega o conteúdo HTML diretamente do editor TinyMCE
@@ -1465,9 +1482,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || 'Erro no servidor');
             }
             loadAdminNews(); // Refresh list on success
+            return true;
         } catch (error) {
             console.error('Error submitting news form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
     
@@ -1476,6 +1495,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const id = data.id_missionario;
+
+        // Pega o conteúdo dos editores TinyMCE, pois eles não são enviados com o FormData
+        const descEditor = tinymce.get('mis_descricao');
+        if (descEditor) {
+            data.mis_descricao = descEditor.getContent();
+        }
+        const histEditor = tinymce.get('mis_historia');
+        if (histEditor) {
+            data.mis_historia = histEditor.getContent();
+        }
         
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/api/missionaries/${id}` : '/api/missionaries';
@@ -1491,9 +1520,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || 'Erro no servidor');
             }
             loadAdminMissionaries();
+            return true;
         } catch (error) {
             console.error('Error submitting missionary form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
 
@@ -1517,9 +1548,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.error || 'Erro no servidor');
             }
             loadAdminEvents();
+            return true;
         } catch (error) {
             console.error('Error submitting event form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
 
@@ -1559,9 +1592,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isEditable = correctedRelogioDate >= today;
                 loadAdminPrayerClock(relogioId, isEditable);
             }
+            return true;
         } catch (error) {
             console.error('Error submitting prayer clock form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
 
@@ -1590,10 +1625,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const select = document.getElementById('quadro-select');
             select.value = newOrUpdatedId;
             select.dispatchEvent(new Event('change'));
-
+            return true;
         } catch (error) {
             console.error('Error submitting quadro form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
 
@@ -1632,9 +1668,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isEditable = correctedEndDate >= today;
                 loadAdminPostitsForQuadro(quadroId, isEditable);
             }
+            return true;
         } catch (error) {
             console.error('Error submitting postit form:', error);
             alert(`Erro ao salvar: ${error.message}`);
+            return false;
         }
     }
 

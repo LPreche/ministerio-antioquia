@@ -16,6 +16,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Admin Antioquia">
     <link rel="apple-touch-icon" href="imagens/icons/icon-192x192.png">
+    <!-- Adiciona o script do TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/dj1kbxz4o1a8ny7yrofytwwmuxouvobv4gu9bx4gk9xtesx6/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body class="admin-page-body">
 
@@ -337,13 +339,6 @@
         </div>
     </footer>
 
-    <!-- Scripts do Editor.js e plugins carregados no final do body para garantir a ordem de execução -->
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest"></script>
-
-    <script src="admin.js"></script> <!-- admin.js é o último a ser carregado -->
+    <script src="admin.js"></script>
 </body>
 </html>
