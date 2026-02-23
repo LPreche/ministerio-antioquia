@@ -890,7 +890,7 @@ footer p {
     border-width: 3px;
     border-color: var(--symbol-color);
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     text-align: left;
     gap: 30px;
     padding: 30px;
@@ -911,6 +911,7 @@ footer p {
 .missionary-card--highlight h4 {
     color: var(--card-bg); /* White title */
     font-size: 1.8rem;
+    text-align: center;
 }
 
 .missionary-card--highlight p {
@@ -1238,13 +1239,23 @@ body.modal-open {
 }
 
 .titus-board {
-    background-color: #D2B48C; /* Cor de cortiça */
-    background-image: url('https://www.transparenttextures.com/patterns/noise.png');
+    background-color: #D1a460; /* Cor de cortiça */
+    background-image: url('https://www.transparenttextures.com/patterns/grid-noise.png');
     padding: 40px;
     border-radius: 10px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 0 15px rgba(0,0,0,0.3);
     border: 15px solid #6F4E37; /* Moldura de madeira escura */
     margin: 20px 5vw 40px;
+}
+
+.titus-board-title {
+    font-family: var(--font-handwritten);
+    font-size: clamp(3rem, 12vw, 7rem); /* Tamanho de fonte responsivo */
+    color: #6F4E37; /* Cor da moldura de madeira */
+    text-align: center;
+    margin: 0 0 30px 0;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    line-height: 1;
 }
 
 /* Animação para os post-its */

@@ -37,7 +37,6 @@ if (!vapidPublicKey || !vapidPrivateKey) {
     );
 }
 
-
 // Middleware para logar todas as requisições recebidas
 // app.use((req, res, next) => {
 //     console.log(`[${new Date().toISOString()}] Requisição recebida: ${req.method} ${req.url}`);

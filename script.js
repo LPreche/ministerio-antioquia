@@ -964,6 +964,18 @@ async function loadTitusBoard() {
             existingHeader.remove();
         }
 
+        // Remove o título anterior, se houver, para evitar duplicação
+        const existingTitle = titusBoard.querySelector('.titus-board-title');
+        if (existingTitle) {
+            existingTitle.remove();
+        }
+
+        // Adiciona o título "QUADRO TITO" dentro do quadro
+        const titleElement = document.createElement('h2');
+        titleElement.className = 'titus-board-title';
+        titleElement.textContent = 'QUADRO TITO';
+        titusBoard.insertBefore(titleElement, titusGrid);
+
         if (!board) {
             titusGrid.innerHTML = '<p style="color: white; grid-column: 1 / -1; text-align: center;">Não há post-its ativos no quadro no momento.</p>';
             return;
