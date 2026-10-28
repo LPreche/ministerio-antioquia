@@ -320,6 +320,8 @@ async function setupPrayerClock() {
     let selectedSlotIndex = null;
     let currentActiveName = "Disponível";
     let lastUpdated15MinIndex = -1;
+    let relogioAindaNaoIniciou = false;
+    let dataFormatadaRelogio = '';
 
     // --- Busca dados da API ---
     try {
@@ -367,7 +369,19 @@ async function setupPrayerClock() {
                     month: 'long',
                     year: 'numeric'
                 });
-                relogioDataPrincipal.textContent = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
+                dataFormatadaRelogio = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
+                relogioDataPrincipal.textContent = dataFormatadaRelogio;
+            }
+
+            // Identifica se o relógio pertence a uma data futura
+            relogioAindaNaoIniciou = Boolean(data.relogio.ainda_nao_iniciou);
+            if (data.relogio.rel_data_relogio) {
+                const now = new Date();
+                const [ano, mes, dia] = String(data.relogio.rel_data_relogio).split('T')[0].split('-').map(Number);
+                const relogioDateMidnight = new Date(ano, mes - 1, dia, 0, 0, 0);
+                if (now < relogioDateMidnight) {
+                    relogioAindaNaoIniciou = true;
+                }
             }
 
             // Se o relógio já foi finalizado mas ainda está dentro da janela de 2h para consulta
@@ -376,6 +390,10 @@ async function setupPrayerClock() {
                 if (btnVoluntariar) btnVoluntariar.style.display = 'none';
                 if (motivosSubtitle) {
                     motivosSubtitle.innerHTML = `<span style="color:#d35400; font-weight:600;">Concluído (disponível para consulta até as 02h)</span>`;
+                }
+            } else if (relogioAindaNaoIniciou) {
+                if (motivosSubtitle) {
+                    motivosSubtitle.innerHTML = `<strong>Início em:</strong> ${dataFormatadaRelogio} (Motivos liberados no dia)`;
                 }
             } else if (motivosSubtitle) {
                 motivosSubtitle.textContent = 'Turno atual';
@@ -553,20 +571,6 @@ async function setupPrayerClock() {
         const nextSlotIndex = (slotIndex + 1) % 96;
         const nextSlot = slots96[nextSlotIndex];
 
-        if (motivosSubtitle) {
-            if (isUserSelection) {
-                motivosSubtitle.innerHTML = `<strong>Turno Selecionado:</strong> ${currentSlot.intervalLabel} &bull; <strong>A Seguir:</strong> ${nextSlot.intervalLabel}`;
-            } else {
-                motivosSubtitle.innerHTML = `<strong>Turno Atual:</strong> ${currentSlot.intervalLabel} &bull; <strong>A Seguir:</strong> ${nextSlot.intervalLabel}`;
-            }
-        }
-
-        if (btnResetMotivos) {
-            btnResetMotivos.style.display = isUserSelection ? 'inline-block' : 'none';
-        }
-
-        motivesListContainer.innerHTML = '';
-
         // Formata os dados e estado do voluntário do horário
         function getVolunteerData(slot) {
             if (slot.isPending) {
@@ -604,6 +608,97 @@ async function setupPrayerClock() {
                 return `<div style="margin-bottom: 6px;">${text}</div>`;
             }).join('');
         }
+
+        // CENÁRIO A: O relógio ainda NÃO chegou no seu dia oficial (data futura)
+        if (relogioAindaNaoIniciou) {
+            if (btnResetMotivos) {
+                btnResetMotivos.style.display = isUserSelection ? 'inline-block' : 'none';
+                btnResetMotivos.textContent = 'Ver Início do Relógio';
+            }
+
+            motivesListContainer.innerHTML = '';
+
+            if (isUserSelection) {
+                if (motivosSubtitle) {
+                    motivosSubtitle.innerHTML = `<strong>Turno Selecionado na Escala:</strong> ${currentSlot.intervalLabel} &bull; <strong>Início:</strong> ${dataFormatadaRelogio || 'Em breve'}`;
+                }
+                const volData = getVolunteerData(currentSlot);
+                const card = document.createElement('li');
+                card.className = 'motive-turn-card current-turn-card';
+                card.style.gridColumn = '1 / -1';
+                card.style.maxWidth = '680px';
+                card.style.margin = '0 auto';
+                card.innerHTML = `
+                    <div class="motive-card-header">
+                        <div class="motive-status-pill selected">
+                            <span>🎯</span>
+                            <strong>HORÁRIO SELECIONADO NA ESCALA</strong>
+                        </div>
+                        <span class="motive-time-badge">${currentSlot.intervalLabel}</span>
+                    </div>
+                    <div class="motive-volunteer-info">
+                        <span>${volData.icon}</span>
+                        <span style="font-weight:600;">Voluntário:</span>
+                        <span class="volunteer-name-badge ${volData.badgeClass}">${volData.label}</span>
+                    </div>
+                    <div class="motive-content-body">
+                        <div class="motive-section-label">Motivos de Oração:</div>
+                        <div class="motive-text-content" style="color: #666; font-style: italic; background: #fdfefe; border: 1.5px dashed #bdc3c7; padding: 14px; border-radius: 8px;">
+                            🔒 Os motivos de oração deste ciclo serão liberados e atualizados automaticamente no dia do relógio (${dataFormatadaRelogio || 'data do evento'}).
+                        </div>
+                    </div>
+                `;
+                motivesListContainer.appendChild(card);
+                return;
+            }
+
+            // Exibição padrão antes da data do relógio: Card de aviso / contagem regressiva
+            if (motivosSubtitle) {
+                motivosSubtitle.innerHTML = `<strong>Relógio em Preparação:</strong> Início em ${dataFormatadaRelogio || 'breve'}`;
+            }
+
+            const avisoCard = document.createElement('li');
+            avisoCard.className = 'motive-turn-card';
+            avisoCard.style.gridColumn = '1 / -1';
+            avisoCard.style.background = '#ffffff';
+            avisoCard.style.border = '1.5px dashed var(--secondary-color, #3498db)';
+            avisoCard.style.borderLeft = '6px solid var(--secondary-color, #3498db)';
+            avisoCard.style.padding = '28px 22px';
+            avisoCard.style.textAlign = 'center';
+            avisoCard.style.maxWidth = '780px';
+            avisoCard.style.margin = '0 auto';
+            avisoCard.innerHTML = `
+                <div style="font-size: 2.3rem; margin-bottom: 12px;">⏰ 🙏</div>
+                <h4 style="margin: 0 0 10px 0; color: var(--text-dark, #2c3e50); font-size: 1.3rem; font-weight: 700;">
+                    Este Relógio de Oração Começa em Breve!
+                </h4>
+                <p style="margin: 0 0 16px 0; color: #555; font-size: 1rem; line-height: 1.6; max-width: 640px; margin-inline: auto;">
+                    A data oficial desta edição é <strong>${dataFormatadaRelogio || 'em breve'}</strong>.<br>
+                    Os motivos de oração do <strong>Turno Atual</strong> e do <strong>Próximo Turno</strong> começarão a aparecer automaticamente em tempo real a partir das <strong>00:00 do dia do relógio</strong>.
+                </p>
+                <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(52, 152, 219, 0.1); color: #2980b9; padding: 10px 22px; border-radius: 30px; font-size: 0.94rem; font-weight: 600;">
+                    <span>✨</span> A escala já está aberta! Escolha seu horário de 15 minutos abaixo e se voluntarie.
+                </div>
+            `;
+            motivesListContainer.appendChild(avisoCard);
+            return;
+        }
+
+        // CENÁRIO B: O relógio está em andamento (já é o dia do relógio)
+        if (motivosSubtitle) {
+            if (isUserSelection) {
+                motivosSubtitle.innerHTML = `<strong>Turno Selecionado:</strong> ${currentSlot.intervalLabel} &bull; <strong>A Seguir:</strong> ${nextSlot.intervalLabel}`;
+            } else {
+                motivosSubtitle.innerHTML = `<strong>Turno Atual:</strong> ${currentSlot.intervalLabel} &bull; <strong>A Seguir:</strong> ${nextSlot.intervalLabel}`;
+            }
+        }
+
+        if (btnResetMotivos) {
+            btnResetMotivos.style.display = isUserSelection ? 'inline-block' : 'none';
+            btnResetMotivos.textContent = 'Ver Turno Atual';
+        }
+
+        motivesListContainer.innerHTML = '';
 
         const currentVol = getVolunteerData(currentSlot);
         const nextVol = getVolunteerData(nextSlot);
@@ -701,9 +796,11 @@ async function setupPrayerClock() {
             const now = new Date();
             const currentSlotIndex = now.getHours() * 4 + Math.floor(now.getMinutes() / 15);
             renderMotivos(currentSlotIndex, false);
-            const activeLi = nameListContainer ? nameListContainer.querySelector(`li[data-index="${currentSlotIndex}"]`) : null;
-            if (activeLi) {
-                activeLi.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            if (!relogioAindaNaoIniciou) {
+                const activeLi = nameListContainer ? nameListContainer.querySelector(`li[data-index="${currentSlotIndex}"]`) : null;
+                if (activeLi) {
+                    activeLi.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
             }
         });
     }

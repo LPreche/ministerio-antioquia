@@ -22,6 +22,7 @@ router.get('/relogio', async (req, res) => {
     try {
         const [relogios] = await db.execute(
             `SELECT id_relogio, rel_titulo, rel_data_relogio,
+                    (NOW() < TIMESTAMP(rel_data_relogio, '00:00:00')) as ainda_nao_iniciou,
                     (NOW() > TIMESTAMP(rel_data_relogio, '23:59:59')) as esta_finalizado
              FROM relogio_oracao 
              WHERE NOW() <= DATE_ADD(DATE_ADD(rel_data_relogio, INTERVAL 1 DAY), INTERVAL 2 HOUR)
@@ -41,6 +42,7 @@ router.get('/relogio', async (req, res) => {
         
         const relogio = relogios[0];
         relogio.esta_finalizado = Boolean(relogio.esta_finalizado);
+        relogio.ainda_nao_iniciou = Boolean(relogio.ainda_nao_iniciou);
         
         if (!relogio || relogio.id_relogio === undefined) {
             console.error('Erro: Relógio encontrado mas sem id_relogio definido.', relogio);
@@ -51,10 +53,16 @@ router.get('/relogio', async (req, res) => {
             'SELECT id_voluntario, vol_nome_completo, vol_horario_escolhido FROM voluntarios WHERE id_relogio = ? ORDER BY vol_horario_escolhido',
             [relogio.id_relogio]
         );
-        const [motivos] = await db.execute(
-            'SELECT id_motivo, mot_descricao, mot_horario FROM motivos_oracao WHERE id_relogio = ? ORDER BY mot_horario, id_motivo',
-            [relogio.id_relogio]
-        );
+
+        // Os motivos só são liberados para o público no dia do relógio (ou nas 2h de tolerância)
+        let motivos = [];
+        if (!relogio.ainda_nao_iniciou) {
+            const [rows] = await db.execute(
+                'SELECT id_motivo, mot_descricao, mot_horario FROM motivos_oracao WHERE id_relogio = ? ORDER BY mot_horario, id_motivo',
+                [relogio.id_relogio]
+            );
+            motivos = rows;
+        }
         const [pendentes] = await db.execute(
             "SELECT DISTINCT sol_horario_escolhido FROM solicitacoes_oracao WHERE id_relogio = ? AND sol_status = 'pendente'",
             [relogio.id_relogio]
