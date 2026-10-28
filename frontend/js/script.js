@@ -543,18 +543,21 @@ async function setupPrayerClock() {
         });
     }
 
-    // --- 3. EXIBIÇÃO DINÂMICA DOS MOTIVOS DE ORAÇÃO ---
+    // --- 3. EXIBIÇÃO DINÂMICA DOS MOTIVOS DE ORAÇÃO (TURNO ATUAL E PRÓXIMO TURNO COM VOLUNTÁRIOS) ---
     function renderMotivos(slotIndex, isUserSelection = false) {
         if (!motivesListContainer) return;
 
-        const slot = slots96[slotIndex];
-        if (!slot) return;
+        const currentSlot = slots96[slotIndex];
+        if (!currentSlot) return;
+
+        const nextSlotIndex = (slotIndex + 1) % 96;
+        const nextSlot = slots96[nextSlotIndex];
 
         if (motivosSubtitle) {
             if (isUserSelection) {
-                motivosSubtitle.textContent = `Turno selecionado: ${slot.intervalLabel} (${slot.name})`;
+                motivosSubtitle.innerHTML = `<strong>Turno Selecionado:</strong> ${currentSlot.intervalLabel} &bull; <strong>A Seguir:</strong> ${nextSlot.intervalLabel}`;
             } else {
-                motivosSubtitle.textContent = `Turno atual: ${slot.intervalLabel} (${slot.name})`;
+                motivosSubtitle.innerHTML = `<strong>Turno Atual:</strong> ${currentSlot.intervalLabel} &bull; <strong>A Seguir:</strong> ${nextSlot.intervalLabel}`;
             }
         }
 
@@ -564,40 +567,115 @@ async function setupPrayerClock() {
 
         motivesListContainer.innerHTML = '';
 
-        const hasCycleMotives = slot.motives && slot.motives.length > 0;
-        const hasGeneralMotivos = generalMotivos && generalMotivos.length > 0;
-
-        if (!hasCycleMotives && !hasGeneralMotivos) {
-            const emptyLi = document.createElement('li');
-            emptyLi.textContent = 'Nenhum motivo de oração cadastrado no momento.';
-            motivesListContainer.appendChild(emptyLi);
-            return;
+        // Formata os dados e estado do voluntário do horário
+        function getVolunteerData(slot) {
+            if (slot.isPending) {
+                return {
+                    label: 'Em análise',
+                    badgeClass: 'is-pending',
+                    icon: '⏳'
+                };
+            }
+            if (slot.isAvailable || slot.name === 'Disponível') {
+                return {
+                    label: 'Horário Disponível',
+                    badgeClass: 'is-available',
+                    icon: '🙏'
+                };
+            }
+            return {
+                label: slot.name,
+                badgeClass: 'is-assigned',
+                icon: '👤'
+            };
         }
 
-        // 1. Motivos específicos do ciclo
-        if (hasCycleMotives) {
-            slot.motives.forEach(m => {
-                const li = document.createElement('li');
-                const badge = document.createElement('span');
-                badge.className = 'motive-badge';
-                badge.textContent = slot.intervalLabel;
-                li.appendChild(badge);
-                li.appendChild(document.createTextNode(' ' + m.mot_descricao));
-                motivesListContainer.appendChild(li);
-            });
+        // Formata os motivos do slot
+        function getSlotMotivesHtml(slot) {
+            if (!slot.motives || slot.motives.length === 0) {
+                return '<span style="color:#888; font-style:italic;">Nenhum motivo específico cadastrado para este turno.</span>';
+            }
+            return slot.motives.map(m => {
+                const text = String(m.mot_descricao || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\n/g, '<br>');
+                return `<div style="margin-bottom: 6px;">${text}</div>`;
+            }).join('');
         }
 
-        // 2. Motivos gerais
-        if (hasGeneralMotivos) {
-            generalMotivos.forEach(m => {
-                const li = document.createElement('li');
-                const badge = document.createElement('span');
-                badge.className = 'motive-badge motive-general-badge';
-                badge.textContent = 'Geral';
-                li.appendChild(badge);
-                li.appendChild(document.createTextNode(' ' + m.mot_descricao));
-                motivesListContainer.appendChild(li);
-            });
+        const currentVol = getVolunteerData(currentSlot);
+        const nextVol = getVolunteerData(nextSlot);
+
+        // --- Card 1: Turno Atual (ou Selecionado) ---
+        const currentCard = document.createElement('li');
+        currentCard.className = 'motive-turn-card current-turn-card';
+        currentCard.innerHTML = `
+            <div class="motive-card-header">
+                <div class="motive-status-pill ${isUserSelection ? 'selected' : 'current'}">
+                    ${isUserSelection ? '<span>🎯</span>' : '<span class="motive-live-dot"></span>'}
+                    <strong>${isUserSelection ? 'TURNO SELECIONADO' : 'TURNO ATUAL'}</strong>
+                </div>
+                <span class="motive-time-badge">${currentSlot.intervalLabel}</span>
+            </div>
+            <div class="motive-volunteer-info">
+                <span>${currentVol.icon}</span>
+                <span style="font-weight:600;">Voluntário:</span>
+                <span class="volunteer-name-badge ${currentVol.badgeClass}">${currentVol.label}</span>
+            </div>
+            <div class="motive-content-body">
+                <div class="motive-section-label">Motivo de Oração:</div>
+                <div class="motive-text-content">${getSlotMotivesHtml(currentSlot)}</div>
+            </div>
+        `;
+        motivesListContainer.appendChild(currentCard);
+
+        // --- Card 2: Próximo Turno ---
+        const nextCard = document.createElement('li');
+        nextCard.className = 'motive-turn-card next-turn-card';
+        nextCard.innerHTML = `
+            <div class="motive-card-header">
+                <div class="motive-status-pill next">
+                    <span>⏳</span>
+                    <strong>A SEGUIR (PRÓXIMO TURNO)</strong>
+                </div>
+                <span class="motive-time-badge">${nextSlot.intervalLabel}</span>
+            </div>
+            <div class="motive-volunteer-info">
+                <span>${nextVol.icon}</span>
+                <span style="font-weight:600;">Voluntário:</span>
+                <span class="volunteer-name-badge ${nextVol.badgeClass}">${nextVol.label}</span>
+            </div>
+            <div class="motive-content-body">
+                <div class="motive-section-label">Motivo de Oração:</div>
+                <div class="motive-text-content">${getSlotMotivesHtml(nextSlot)}</div>
+            </div>
+        `;
+        motivesListContainer.appendChild(nextCard);
+
+        // --- Card 3: Motivos Gerais (se houver) ---
+        if (generalMotivos && generalMotivos.length > 0) {
+            const generalCard = document.createElement('li');
+            generalCard.className = 'motive-turn-card';
+            generalCard.style.gridColumn = '1 / -1';
+            generalCard.style.borderLeft = '6px solid #8e44ad !important';
+            generalCard.innerHTML = `
+                <div class="motive-card-header">
+                    <div class="motive-status-pill" style="background:#f4ecf7; color:#8e44ad; border:1px solid rgba(142,68,173,0.2);">
+                        <span>✨</span>
+                        <strong>MOTIVOS GERAIS DE ORAÇÃO</strong>
+                    </div>
+                    <span class="motive-time-badge" style="background:#f4ecf7; color:#8e44ad;">Todos os turnos</span>
+                </div>
+                <div class="motive-content-body">
+                    ${generalMotivos.map(m => {
+                        const text = String(m.mot_descricao || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                        return `<div style="margin-bottom:8px; line-height:1.5;">• ${text}</div>`;
+                    }).join('')}
+                </div>
+            `;
+            motivesListContainer.appendChild(generalCard);
         }
     }
 
