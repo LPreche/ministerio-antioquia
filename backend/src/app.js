@@ -56,4 +56,15 @@ app.use('/api', prayerClockRoutes);
 app.use('/api', titoRoutes);
 app.use('/api', sseRoutes);
 
+app.get('/api/status', (req, res) => {
+    res.json({
+        ok: true,
+        deployTime: new Date().toISOString(),
+        adminUserConfigured: !!process.env.ADMIN_USER,
+        adminUser: process.env.ADMIN_USER ? process.env.ADMIN_USER.trim() : 'admin',
+        adminPassLength: process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.length : 0,
+        hasAdminPassHash: !!process.env.ADMIN_PASS_HASH
+    });
+});
+
 module.exports = app;
