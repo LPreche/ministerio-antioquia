@@ -678,10 +678,11 @@ footer a:hover {
 
 .prayer-requests-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
+    text-align: center;
+    gap: 8px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 16px;
     margin-bottom: 20px;
@@ -689,7 +690,7 @@ footer a:hover {
 
 #motivos-title {
     margin: 0;
-    text-align: left;
+    text-align: center;
     font-size: clamp(1.35rem, 2vw, 1.75rem);
     color: var(--primary-color);
     font-family: var(--font-script);
@@ -700,7 +701,7 @@ footer a:hover {
     color: var(--secondary-color);
     font-weight: 500;
     font-size: 0.95rem;
-    text-align: left;
+    text-align: center;
 }
 
 #btn-reset-motivos-view {
