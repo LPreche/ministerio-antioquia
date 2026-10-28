@@ -440,6 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prayerClockTableBody = document.querySelector('#prayer-clock-table tbody');
         const editRelogioBtn = document.getElementById('btn-edit-relogio');
         const addMotivoBtn = document.getElementById('btn-add-motivo');
+        const importMotivosBtn = document.getElementById('btn-import-motivos');
         const motivosTableBody = document.querySelector('#motivos-oracao-table tbody');
 
         try {
@@ -471,6 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset buttons first
                 addVolunteerBtn.disabled = true;
                 addMotivoBtn.disabled = true;
+                if (importMotivosBtn) importMotivosBtn.disabled = true;
                 editRelogioBtn.style.display = 'none';
                 
                 if (selectedId) {
@@ -491,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Enable/disable main buttons based on date
                     addVolunteerBtn.disabled = !isEditable;
                     addMotivoBtn.disabled = !isEditable;
+                    if (importMotivosBtn) importMotivosBtn.disabled = !isEditable;
 
                     // Load tables with editability flag
                     loadAdminPrayerClock(selectedId, isEditable);
@@ -503,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Add/remove disabled class for visual styling
-                [addVolunteerBtn, addMotivoBtn].forEach(btn => {
+                [addVolunteerBtn, addMotivoBtn, importMotivosBtn].filter(Boolean).forEach(btn => {
                     btn.disabled ? btn.classList.add('btn-disabled') : btn.classList.remove('btn-disabled');
                 });
             });
@@ -513,7 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 editRelogioBtn.style.display = 'none';
                 addMotivoBtn.disabled = true;
                 addVolunteerBtn.disabled = true;
-                [addVolunteerBtn, addMotivoBtn].forEach(btn => btn.classList.add('btn-disabled'));
+                if (importMotivosBtn) importMotivosBtn.disabled = true;
+                [addVolunteerBtn, addMotivoBtn, importMotivosBtn].filter(Boolean).forEach(btn => btn.classList.add('btn-disabled'));
             }
 
         } catch (error) {
@@ -1967,6 +1971,146 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
+
+    // --- LÓGICA DO MODAL DE IMPORTAÇÃO DE MOTIVOS (.TXT) COM DISTRIBUIÇÃO ALEATÓRIA ---
+    function initImportMotivosModal() {
+        const modal = document.getElementById('modal-import-motivos');
+        const openBtn = document.getElementById('btn-import-motivos');
+        const closeBtn = document.getElementById('btn-close-import-modal');
+        const cancelBtn = document.getElementById('btn-cancel-import');
+        const confirmBtn = document.getElementById('btn-confirm-import');
+        const fileInput = document.getElementById('import-file-input');
+        const textPreview = document.getElementById('import-text-preview');
+        const countBadge = document.getElementById('import-count-badge');
+        const replaceCheckbox = document.getElementById('import-replace-checkbox');
+        const relogioSelect = document.getElementById('relogio-select');
+
+        if (!modal || !openBtn) return;
+
+        function updateCount() {
+            if (!textPreview || !countBadge) return;
+            const lines = textPreview.value.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            const count = lines.length;
+            countBadge.textContent = `${count} motivo${count === 1 ? '' : 's'} detectado${count === 1 ? '' : 's'}`;
+            if (count > 0) {
+                countBadge.style.background = '#e8f8f5';
+                countBadge.style.color = '#117a65';
+            } else {
+                countBadge.style.background = '#eef2f7';
+                countBadge.style.color = '#2c3e50';
+            }
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            if (fileInput) fileInput.value = '';
+            if (textPreview) textPreview.value = '';
+            updateCount();
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<span>🎲</span> Distribuir Aleatoriamente';
+            }
+        }
+
+        openBtn.addEventListener('click', () => {
+            const relogioId = relogioSelect ? relogioSelect.value : null;
+            if (!relogioId) {
+                alert('Selecione primeiro um relógio de oração na lista acima.');
+                return;
+            }
+            if (fileInput) fileInput.value = '';
+            if (textPreview) textPreview.value = '';
+            if (replaceCheckbox) replaceCheckbox.checked = true;
+            updateCount();
+            modal.style.display = 'flex';
+        });
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        if (textPreview) {
+            textPreview.addEventListener('input', updateCount);
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    if (textPreview) {
+                        textPreview.value = content;
+                        updateCount();
+                    }
+                };
+                reader.onerror = () => {
+                    alert('Erro ao ler o arquivo .TXT selecionado.');
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', async () => {
+                const relogioId = relogioSelect ? relogioSelect.value : null;
+                if (!relogioId) {
+                    alert('Nenhum relógio selecionado.');
+                    return;
+                }
+
+                const rawText = textPreview ? textPreview.value : '';
+                const motivos = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+                if (motivos.length === 0) {
+                    alert('Por favor, envie um arquivo .TXT ou digite pelo menos um motivo de oração.');
+                    return;
+                }
+
+                const replace = replaceCheckbox ? replaceCheckbox.checked : true;
+                const confirmMsg = replace
+                    ? `Deseja realmente substituir todos os motivos deste relógio e distribuir aleatoriamente os ${motivos.length} motivos entre os ciclos de 15 minutos?`
+                    : `Deseja distribuir aleatoriamente os ${motivos.length} motivos nos ciclos disponíveis?`;
+
+                if (!confirm(confirmMsg)) return;
+
+                try {
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span>⏳</span> Distribuindo...';
+
+                    const response = await fetch(`/api/relogios/${relogioId}/import-motivos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ motivos, replace })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Erro ao importar motivos de oração.');
+                    }
+
+                    alert(result.message || 'Motivos importados e distribuídos com sucesso!');
+                    closeModal();
+
+                    // Recarrega a tabela de motivos do relógio
+                    loadAdminMotivosOracao(relogioId, true);
+                } catch (error) {
+                    console.error('Erro na importação de motivos:', error);
+                    alert(`Falha na importação: ${error.message}`);
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<span>🎲</span> Distribuir Aleatoriamente';
+                }
+            });
+        }
+    }
+
+    initImportMotivosModal();
 
     const yearElement = document.getElementById('current-year');
     if (yearElement) {

@@ -332,6 +332,104 @@ router.delete('/motivos-oracao/:id', isAuthenticated, async (req, res) => {
     }
 });
 
+// POST /api/relogios/:id/import-motivos (Admin)
+// Importa motivos a partir de arquivo/texto (.TXT) e distribui aleatoriamente nos ciclos de 15 minutos
+router.post('/relogios/:id/import-motivos', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { text, motivos, replace = true } = req.body;
+
+        // Verifica se o relógio existe
+        const [relogioRows] = await db.execute('SELECT id_relogio, rel_titulo FROM relogio_oracao WHERE id_relogio = ?', [id]);
+        if (relogioRows.length === 0) {
+            return res.status(404).json({ error: 'Relógio de oração não encontrado.' });
+        }
+
+        // Extrai motivos de array ou de texto separado por quebra de linha
+        let motivosList = [];
+        if (Array.isArray(motivos)) {
+            motivosList = motivos.map(m => String(m).trim()).filter(m => m.length > 0);
+        } else if (typeof text === 'string') {
+            motivosList = text.split(/\r?\n/).map(m => m.trim()).filter(m => m.length > 0);
+        }
+
+        if (motivosList.length === 0) {
+            return res.status(400).json({ error: 'Nenhum motivo de oração válido encontrado. Envie um arquivo .TXT com pelo menos um motivo.' });
+        }
+
+        // Gera os 96 ciclos de 15 minutos em 24h (00:00:00 até 23:45:00)
+        const allCycles = [];
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 15) {
+                const hh = String(h).padStart(2, '0');
+                const mm = String(m).padStart(2, '0');
+                allCycles.push(`${hh}:${mm}:00`);
+            }
+        }
+
+        let targetCycles = [];
+        if (replace) {
+            // Remove motivos existentes do relógio
+            await db.execute('DELETE FROM motivos_oracao WHERE id_relogio = ?', [id]);
+            targetCycles = [...allCycles];
+        } else {
+            // Busca ciclos já ocupados
+            const [existing] = await db.execute('SELECT mot_horario FROM motivos_oracao WHERE id_relogio = ? AND mot_horario IS NOT NULL', [id]);
+            const occupied = new Set(existing.map(e => e.mot_horario));
+            targetCycles = allCycles.filter(c => !occupied.has(c));
+            if (targetCycles.length === 0) {
+                return res.status(400).json({ error: 'Todos os 96 ciclos de horário deste relógio já possuem motivos cadastrados.' });
+            }
+        }
+
+        // Embaralhamento Fisher-Yates
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Embaralha tanto os ciclos disponíveis quanto os motivos recebidos
+        const shuffledCycles = shuffle(targetCycles);
+        const shuffledMotivos = shuffle(motivosList);
+
+        // Mapeia os motivos para os ciclos sorteados
+        const cycleMotivesMap = new Map();
+        shuffledMotivos.forEach((motivo, index) => {
+            const cycleTime = shuffledCycles[index % shuffledCycles.length];
+            if (cycleMotivesMap.has(cycleTime)) {
+                cycleMotivesMap.set(cycleTime, cycleMotivesMap.get(cycleTime) + '\n\n• ' + motivo);
+            } else {
+                cycleMotivesMap.set(cycleTime, motivo);
+            }
+        });
+
+        // Insere no banco de dados
+        for (const [horario, descricao] of cycleMotivesMap.entries()) {
+            await db.execute(
+                'INSERT INTO motivos_oracao (id_relogio, mot_horario, mot_descricao) VALUES (?, ?, ?)',
+                [id, horario, descricao]
+            );
+        }
+
+        // Notifica via Server-Sent Events para atualização em tempo real
+        sendSseUpdate('relogio_update', { relogioId: id, action: 'import_motivos' });
+
+        return res.json({
+            success: true,
+            totalMotivos: shuffledMotivos.length,
+            ciclosPreenchidos: cycleMotivesMap.size,
+            message: `${shuffledMotivos.length} motivos distribuídos aleatoriamente em ${cycleMotivesMap.size} ciclos de 15 minutos com sucesso!`
+        });
+    } catch (error) {
+        console.error('Erro ao importar motivos de oração:', error);
+        res.status(500).json({ error: 'Erro interno ao importar e distribuir motivos de oração.' });
+    }
+});
+
 // ==========================================
 // --- Solicitações de Voluntários de Oração ---
 // ==========================================

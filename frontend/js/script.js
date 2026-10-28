@@ -327,13 +327,19 @@ async function setupPrayerClock() {
         if (response.ok) {
             const data = await response.json();
 
+            const relogioNomePrincipal = document.getElementById('relogio-nome-principal');
+            const relogioDataPrincipal = document.getElementById('relogio-data-principal');
+
             // Caso não haja relógio ativo no momento (expirado após 2h da finalização)
             if (!data || !data.relogio) {
                 const btnVoluntariar = document.getElementById('btn-open-voluntariar');
                 if (btnVoluntariar) btnVoluntariar.style.display = 'none';
 
+                if (relogioNomePrincipal) relogioNomePrincipal.textContent = 'Relógio de Oração';
+                if (relogioDataPrincipal) relogioDataPrincipal.textContent = 'Nenhuma edição ativa no momento';
+
                 const motivosTitle = document.getElementById('motivos-title');
-                if (motivosTitle) motivosTitle.textContent = 'Relógio de Oração';
+                if (motivosTitle) motivosTitle.textContent = 'Motivos de Oração';
                 if (motivosSubtitle) motivosSubtitle.textContent = 'Nenhuma edição ativa no momento';
 
                 if (motivesListContainer) {
@@ -348,15 +354,31 @@ async function setupPrayerClock() {
                 return;
             }
 
+            // Exibe o Nome do Relógio no Topo e a Data
+            if (relogioNomePrincipal && data.relogio.rel_titulo) {
+                relogioNomePrincipal.textContent = data.relogio.rel_titulo;
+            }
+            if (relogioDataPrincipal && data.relogio.rel_data_relogio) {
+                const dateObj = new Date(data.relogio.rel_data_relogio);
+                const localDate = new Date(dateObj.getTime() + dateObj.getTimezoneOffset() * 60000);
+                const dateFormatted = localDate.toLocaleDateString('pt-BR', {
+                    weekday: 'long',
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                relogioDataPrincipal.textContent = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
+            }
+
             // Se o relógio já foi finalizado mas ainda está dentro da janela de 2h para consulta
             if (data.relogio.esta_finalizado) {
                 const btnVoluntariar = document.getElementById('btn-open-voluntariar');
                 if (btnVoluntariar) btnVoluntariar.style.display = 'none';
                 if (motivosSubtitle) {
-                    motivosSubtitle.innerHTML = `<strong>${data.relogio.rel_titulo}</strong> — <span style="color:#d35400; font-weight:600;">Concluído (disponível para consulta até as 02h)</span>`;
+                    motivosSubtitle.innerHTML = `<span style="color:#d35400; font-weight:600;">Concluído (disponível para consulta até as 02h)</span>`;
                 }
-            } else if (motivosSubtitle && data.relogio.rel_titulo) {
-                motivosSubtitle.textContent = `${data.relogio.rel_titulo} (Turno atual)`;
+            } else if (motivosSubtitle) {
+                motivosSubtitle.textContent = 'Turno atual';
             }
 
             // 1. Mapear Voluntários para seus respectivos ciclos de 15 minutos

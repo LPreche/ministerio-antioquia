@@ -201,7 +201,10 @@
                         <div style="text-align: center; margin-bottom: 20px;">
                             <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">MOTIVOS DE ORAÇÃO</h4>
                         </div>
-                        <div style="text-align: right; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 25px;">
+                            <button class="btn btn-secondary" id="btn-import-motivos" disabled style="display: inline-flex; align-items: center; gap: 6px;">
+                                <span>📄</span> Importar Motivos (.TXT)
+                            </button>
                             <button class="btn btn-add" data-section="motivos-oracao" id="btn-add-motivo" disabled>Adicionar Motivo de Oração</button>
                         </div>
                         <div class="table-wrapper">
@@ -383,6 +386,48 @@
                 <form id="data-form">
                     <!-- Campos do formulário serão injetados aqui via JS -->
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Importar Motivos de Oração (.TXT) -->
+    <div id="modal-import-motivos" class="modal-overlay">
+        <div class="modal-content" style="max-width: 580px;">
+            <button class="modal-close" id="btn-close-import-modal" aria-label="Fechar">&times;</button>
+            <div class="modal-body">
+                <h3 style="margin-top: 0; color: var(--primary-color); display: flex; align-items: center; gap: 8px;">
+                    <span>📄</span> Importar Motivos de Oração (.TXT)
+                </h3>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 18px; line-height: 1.5;">
+                    Envie um arquivo <strong>.TXT</strong> ou cole os motivos no campo abaixo. Cada motivo deve estar em uma nova linha. O sistema irá <strong>embaralhar e distribuir aleatoriamente</strong> os motivos entre os ciclos de 15 em 15 minutos do relógio selecionado.
+                </p>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="import-file-input" style="font-weight: 600; display: block; margin-bottom: 6px;">Selecione o arquivo .TXT:</label>
+                    <input type="file" id="import-file-input" accept=".txt,text/plain" style="width: 100%; padding: 8px; border: 1px dashed #bbb; border-radius: 6px; background: #fafafa; cursor: pointer;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label for="import-text-preview" style="font-weight: 600; margin: 0;">Ou cole/edite o texto diretamente:</label>
+                        <span id="import-count-badge" style="font-size: 0.8rem; font-weight: 600; background: #eef2f7; color: #2c3e50; padding: 2px 8px; border-radius: 12px;">0 motivos detectados</span>
+                    </div>
+                    <textarea id="import-text-preview" rows="8" placeholder="Exemplo:&#10;Orar pelos missionários no sertão&#10;Orar pelas famílias da nossa igreja&#10;Orar pelos enfermos e hospitalizados" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 0.9rem; resize: vertical;"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px; background: #fdfaf6; padding: 12px; border-radius: 6px; border: 1px solid #fae5d3;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; font-weight: 500; font-size: 0.92rem; color: #7e5109;">
+                        <input type="checkbox" id="import-replace-checkbox" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        Substituir e limpar motivos existentes deste relógio
+                    </label>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-import">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btn-confirm-import" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <span>🎲</span> Distribuir Aleatoriamente
+                    </button>
+                </div>
             </div>
         </div>
     </div>
