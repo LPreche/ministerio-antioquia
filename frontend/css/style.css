@@ -726,10 +726,14 @@ footer a:hover {
 #prayer-motivos-list {
     list-style: none;
     padding: 0;
-    margin: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 960px;
+    width: 100%;
 }
 
 .prayer-requests-section li,
@@ -754,12 +758,16 @@ footer a:hover {
     background: #ffffff !important;
     border: 1px solid #e2e8f0;
     border-radius: 12px !important;
-    padding: 20px 22px !important;
+    padding: 22px 24px !important;
     display: flex;
     flex-direction: column;
     gap: 14px;
+    flex: 1 1 320px;
+    max-width: 460px;
+    width: 100%;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-align: center;
 }
 
 .motive-turn-card.current-turn-card {
@@ -774,10 +782,10 @@ footer a:hover {
 
 .motive-card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
     border-bottom: 1px dashed #e2e8f0;
     padding-bottom: 12px;
 }
@@ -839,6 +847,7 @@ footer a:hover {
 
 .motive-volunteer-info {
     display: flex;
+    justify-content: center;
     align-items: center;
     gap: 8px;
     font-size: 0.92rem;
@@ -873,6 +882,7 @@ footer a:hover {
 
 .motive-content-body {
     padding: 4px 0 0 0;
+    text-align: center;
 }
 
 .motive-content-body .motive-section-label {
@@ -882,6 +892,7 @@ footer a:hover {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
+    text-align: center;
 }
 
 .motive-content-body .motive-text-content {
@@ -889,6 +900,7 @@ footer a:hover {
     color: #2d3748;
     line-height: 1.6;
     font-weight: 500;
+    text-align: center;
 }
 
 .prayer-layout-grid {
