@@ -22,8 +22,12 @@ router.post('/login', (req, res) => {
     const cleanUser = String(username).trim();
     const cleanPass = String(password).trim();
 
-    // Permite login caso o hash bata com a senha limpa ou com a senha bruta
-    const passMatches = (sha256(cleanPass) === adminPassHash) || (cleanPass === rawAdminPass);
+    // Permite login caso o hash bata com a senha limpa, bruta ou variação com/sem '#' (tratamento de comentário de .env)
+    const passMatches = 
+        (sha256(cleanPass) === adminPassHash) || 
+        (cleanPass === rawAdminPass) ||
+        (cleanPass === rawAdminPass + '#') ||
+        (cleanPass.replace(/#$/, '') === rawAdminPass);
 
     if (cleanUser.toLowerCase() === adminUser.toLowerCase() && passMatches) {
         req.session.user = { username: adminUser };
