@@ -56,7 +56,7 @@ router.get('/relogio', async (req, res) => {
             [relogio.id_relogio]
         );
         const [pendentes] = await db.execute(
-            'SELECT DISTINCT sol_horario_escolhido FROM solicitacoes_oracao WHERE id_relogio = ? AND sol_status = "pendente"',
+            "SELECT DISTINCT sol_horario_escolhido FROM solicitacoes_oracao WHERE id_relogio = ? AND sol_status = 'pendente'",
             [relogio.id_relogio]
         );
 
@@ -481,7 +481,7 @@ router.post('/relogio/solicitacao', async (req, res) => {
 
         // 2. Verifica se já existe solicitação pendente (Em análise) para este horário
         const [solExistente] = await db.execute(
-            'SELECT id_solicitacao FROM solicitacoes_oracao WHERE id_relogio = ? AND sol_horario_escolhido = ? AND sol_status = "pendente"',
+            "SELECT id_solicitacao FROM solicitacoes_oracao WHERE id_relogio = ? AND sol_horario_escolhido = ? AND sol_status = 'pendente'",
             [id_relogio, horario]
         );
         if (solExistente.length > 0) {
@@ -490,7 +490,7 @@ router.post('/relogio/solicitacao', async (req, res) => {
 
         // Insere a solicitação
         const [result] = await db.execute(
-            'INSERT INTO solicitacoes_oracao (id_relogio, sol_nome_completo, sol_horario_escolhido, sol_status, sol_data_criacao) VALUES (?, ?, ?, "pendente", NOW())',
+            "INSERT INTO solicitacoes_oracao (id_relogio, sol_nome_completo, sol_horario_escolhido, sol_status, sol_data_criacao) VALUES (?, ?, ?, 'pendente', NOW())",
             [id_relogio, fullName, horario]
         );
 
@@ -566,7 +566,7 @@ router.post('/admin/solicitacoes-oracao/:id/aprovar', isAuthenticated, async (re
         await connection.beginTransaction();
 
         const [solicitacoes] = await connection.execute(
-            'SELECT id_solicitacao, id_relogio, sol_nome_completo, sol_horario_escolhido FROM solicitacoes_oracao WHERE id_solicitacao = ? AND sol_status = "pendente"',
+            "SELECT id_solicitacao, id_relogio, sol_nome_completo, sol_horario_escolhido FROM solicitacoes_oracao WHERE id_solicitacao = ? AND sol_status = 'pendente'",
             [solicitacaoId]
         );
 
@@ -584,7 +584,7 @@ router.post('/admin/solicitacoes-oracao/:id/aprovar', isAuthenticated, async (re
 
         // Atualiza a solicitação para aprovada
         await connection.execute(
-            'UPDATE solicitacoes_oracao SET sol_status = "aprovado" WHERE id_solicitacao = ?',
+            "UPDATE solicitacoes_oracao SET sol_status = 'aprovado' WHERE id_solicitacao = ?",
             [solicitacaoId]
         );
 
@@ -608,7 +608,7 @@ router.post('/admin/solicitacoes-oracao/:id/recusar', isAuthenticated, async (re
     try {
         const solicitacaoId = req.params.id;
         await db.execute(
-            'UPDATE solicitacoes_oracao SET sol_status = "recusado" WHERE id_solicitacao = ?',
+            "UPDATE solicitacoes_oracao SET sol_status = 'recusado' WHERE id_solicitacao = ?",
             [solicitacaoId]
         );
         sendSseUpdate({ type: 'prayer_clock_updated' });

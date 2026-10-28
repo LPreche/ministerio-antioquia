@@ -310,14 +310,14 @@ router.post('/admin/sugestoes/:id/aprovar', isAuthenticated, async (req, res) =>
     try {
         await connection.beginTransaction();
 
-        const [sugestoes] = await connection.execute('SELECT id_quadro, sug_conteudo FROM postit_sugestoes WHERE id_sugestao = ? AND sug_status = "pendente"', [sugestaoId]);
+        const [sugestoes] = await connection.execute("SELECT id_quadro, sug_conteudo FROM postit_sugestoes WHERE id_sugestao = ? AND sug_status = 'pendente'", [sugestaoId]);
         if (sugestoes.length === 0) {
             throw new Error('Sugestão não encontrada ou já processada.');
         }
         const sugestao = sugestoes[0];
 
         await connection.execute('INSERT INTO post_it (id_quadro, pst_conteudo) VALUES (?, ?)', [sugestao.id_quadro, sugestao.sug_conteudo]);
-        await connection.execute('UPDATE postit_sugestoes SET sug_status = "aprovado" WHERE id_sugestao = ?', [sugestaoId]);
+        await connection.execute("UPDATE postit_sugestoes SET sug_status = 'aprovado' WHERE id_sugestao = ?", [sugestaoId]);
 
         await connection.commit();
         res.json({ message: 'Sugestão aprovada e post-it criado com sucesso.' });
@@ -334,7 +334,7 @@ router.post('/admin/sugestoes/:id/aprovar', isAuthenticated, async (req, res) =>
 router.post('/admin/sugestoes/:id/recusar', isAuthenticated, async (req, res) => {
     try {
         const sugestaoId = req.params.id;
-        await db.execute('UPDATE postit_sugestoes SET sug_status = "recusado" WHERE id_sugestao = ?', [sugestaoId]);
+        await db.execute("UPDATE postit_sugestoes SET sug_status = 'recusado' WHERE id_sugestao = ?", [sugestaoId]);
         res.json({ message: 'Sugestão recusada com sucesso.' });
     } catch (error) {
         console.error('Erro ao recusar sugestão:', error);
