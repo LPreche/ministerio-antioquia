@@ -472,11 +472,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset buttons first
                 addVolunteerBtn.disabled = true;
                 addMotivoBtn.disabled = true;
-                if (importMotivosBtn) importMotivosBtn.disabled = true;
                 editRelogioBtn.style.display = 'none';
                 
                 if (selectedId) {
                     editRelogioBtn.style.display = 'inline-block'; // Show edit clock button
+                    if (importMotivosBtn) importMotivosBtn.disabled = false;
                     const relogioDateString = selectedOption.dataset.date;
                     
                     // --- Date Comparison Logic ---
@@ -493,7 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Enable/disable main buttons based on date
                     addVolunteerBtn.disabled = !isEditable;
                     addMotivoBtn.disabled = !isEditable;
-                    if (importMotivosBtn) importMotivosBtn.disabled = !isEditable;
 
                     // Load tables with editability flag
                     loadAdminPrayerClock(selectedId, isEditable);
@@ -506,18 +505,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Add/remove disabled class for visual styling
-                [addVolunteerBtn, addMotivoBtn, importMotivosBtn].filter(Boolean).forEach(btn => {
+                [addVolunteerBtn, addMotivoBtn].filter(Boolean).forEach(btn => {
                     btn.disabled ? btn.classList.add('btn-disabled') : btn.classList.remove('btn-disabled');
                 });
+                if (importMotivosBtn) {
+                    importMotivosBtn.disabled ? importMotivosBtn.classList.add('btn-disabled') : importMotivosBtn.classList.remove('btn-disabled');
+                }
             });
 
-            // Garante que os botões comecem desabilitados
+            // Inicialização
             if (select.value === "") {
                 editRelogioBtn.style.display = 'none';
                 addMotivoBtn.disabled = true;
                 addVolunteerBtn.disabled = true;
-                if (importMotivosBtn) importMotivosBtn.disabled = true;
-                [addVolunteerBtn, addMotivoBtn, importMotivosBtn].filter(Boolean).forEach(btn => btn.classList.add('btn-disabled'));
+                [addVolunteerBtn, addMotivoBtn].filter(Boolean).forEach(btn => btn.classList.add('btn-disabled'));
             }
 
         } catch (error) {
@@ -2002,6 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function closeModal() {
+            modal.classList.remove('is-visible');
             modal.style.display = 'none';
             if (fileInput) fileInput.value = '';
             if (textPreview) textPreview.value = '';
@@ -2023,6 +2025,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (replaceCheckbox) replaceCheckbox.checked = true;
             updateCount();
             modal.style.display = 'flex';
+            modal.classList.add('is-visible');
         });
 
         if (closeBtn) closeBtn.addEventListener('click', closeModal);
