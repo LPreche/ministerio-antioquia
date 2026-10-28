@@ -5,14 +5,27 @@ const { sha256 } = require('../middleware/auth.middleware');
 // POST /api/login
 router.post('/login', (req, res) => {
     const { username, password } = req.body;
-    const adminUser = process.env.ADMIN_USER || 'admin';
-    const adminPassHash = process.env.ADMIN_PASS_HASH || sha256(process.env.ADMIN_PASSWORD || 'Lpreche135#');
+    
+    let adminUser = (process.env.ADMIN_USER || 'admin').trim();
+    // Remove possíveis aspas que tenham sido coladas no painel do Render
+    adminUser = adminUser.replace(/^["']|["']$/g, '');
+
+    let rawAdminPass = process.env.ADMIN_PASSWORD || 'Lpreche135#';
+    rawAdminPass = rawAdminPass.replace(/^["']|["']$/g, '').trim();
+
+    const adminPassHash = process.env.ADMIN_PASS_HASH || sha256(rawAdminPass);
 
     if (!username || !password) {
         return res.status(400).json({ message: 'Usuário e senha são obrigatórios.' });
     }
 
-    if (username.trim() === adminUser && sha256(password.trim()) === adminPassHash) {
+    const cleanUser = String(username).trim();
+    const cleanPass = String(password).trim();
+
+    // Permite login caso o hash bata com a senha limpa ou com a senha bruta
+    const passMatches = (sha256(cleanPass) === adminPassHash) || (cleanPass === rawAdminPass);
+
+    if (cleanUser.toLowerCase() === adminUser.toLowerCase() && passMatches) {
         req.session.user = { username: adminUser };
         return res.json({ success: true, message: 'Login bem-sucedido' });
     }

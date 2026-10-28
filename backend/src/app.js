@@ -5,6 +5,9 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 
+// Configura proxy reverso para funcionamento seguro de sessões e HTTPS no Render
+app.set('trust proxy', 1);
+
 // --- MIDDLEWARES GERAIS ---
 app.use(express.json());
 
