@@ -8,15 +8,21 @@
   "theme_color": "#3E260E",
   "icons": [
     {
-      "src": "imagens/icons/icon-192x192.png",
+      "src": "imagens/logo_pwa.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "imagens/icons/icon-512x512.png",
+      "src": "imagens/logo_pwa.jpg",
+      "sizes": "324x324",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "imagens/logo_pwa.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]

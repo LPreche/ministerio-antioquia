@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Movimento Antioquia</title>
-    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
-    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="imagens/logo.png" type="image/png">
+    <link rel="stylesheet" href="css/style.css">
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <!-- Theme color for browser UI -->
@@ -15,7 +15,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Admin Antioquia">
-    <link rel="apple-touch-icon" href="imagens/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="imagens/logo_pwa.jpg">
     <!-- Adiciona o script do TinyMCE -->
     <script src="https://cdn.tiny.cloud/1/dj1kbxz4o1a8ny7yrofytwwmuxouvobv4gu9bx4gk9xtesx6/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
@@ -23,10 +23,11 @@
 
     <!-- Login Modal -->
     <div id="login-modal" class="modal-overlay is-visible">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 420px;">
             <div class="modal-body centered-content">
+                <img src="imagens/logo.png" alt="Logo Movimento Antioquia" style="height: 64px; width: auto; border-radius: var(--radius-sm); margin-bottom: 12px; box-shadow: var(--shadow-sm);">
                 <h3>Acesso Restrito</h3>
-                <p>Por favor, insira suas credenciais para continuar.</p>
+                <p>Insira suas credenciais de administrador para continuar.</p>
                 <form id="login-form" style="width: 100%;">
                     <div class="form-group">
                         <label for="username" style="text-align: left;">Usuário</label>
@@ -48,7 +49,7 @@
 
     <header id="admin-header" style="display: none;">
         <div class="logo-container">
-            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+            <a href="index.html"><img src="imagens/logo.png" alt="Logo Movimento Antioquia" class="logo"></a>
         </div>
         <div class="brand-name">
             <h1>PAINEL ADMINISTRATIVO</h1>
@@ -68,6 +69,7 @@
                 <button class="admin-tab-btn" data-target="prayer-clock-section">Relógio de Oração</button>
                 <button class="admin-tab-btn" data-target="tito-section">Quadro Tito</button>
                 <button class="admin-tab-btn" data-target="news-section">Notícias</button>
+                <button class="admin-tab-btn" data-target="requests-section">Solicitações <span id="badge-requests" class="badge-counter" style="display: none; background: #e74c3c; color: white; border-radius: 10px; padding: 2px 7px; font-size: 0.75rem; margin-left: 6px;">0</span></button>
             </div>
 
             <!-- Menu de navegação para telas móveis -->
@@ -80,6 +82,7 @@
                     <option value="prayer-clock-section">Relógio de Oração</option>
                     <option value="tito-section">Quadro Tito</option>
                     <option value="news-section">Notícias</option>
+                    <option value="requests-section">Solicitações</option>
                 </select>
             </div>
     
@@ -205,12 +208,13 @@
                             <table class="admin-table" id="motivos-oracao-table">
                                 <thead>
                                     <tr>
+                                        <th>Ciclo / Horário</th>
                                         <th>Motivo de Oração</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td colspan="2">Selecione um relógio para ver os motivos de oração.</td></tr>
+                                    <tr><td colspan="3">Selecione um relógio para ver os motivos de oração.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -315,6 +319,56 @@
                             </table>
                         </div>
                     </section>
+
+                    <!-- Seção de Solicitações de Voluntários -->
+                    <section id="requests-section" class="admin-section">
+                        <h3>Solicitações de Voluntários para o Relógio de Oração</h3>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            Aqui você analisa e aprova os voluntários que se inscreveram pela tela pública do Relógio de Oração. As solicitações são exibidas por ordem de chegada (da mais antiga para a mais nova).
+                        </p>
+
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">SOLICITAÇÕES PENDENTES</h4>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="solicitacoes-table">
+                                <thead>
+                                    <tr>
+                                        <th>Voluntário</th>
+                                        <th>Horário Desejado</th>
+                                        <th>Data / Hora da Solicitação</th>
+                                        <th>Relógio</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="5">Carregando solicitações pendentes...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 40px 0 25px;">
+
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">HISTÓRICO DE SOLICITAÇÕES</h4>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="admin-table" id="solicitacoes-historico-table">
+                                <thead>
+                                    <tr>
+                                        <th>Voluntário</th>
+                                        <th>Horário</th>
+                                        <th>Data / Hora</th>
+                                        <th>Relógio</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="5">Carregando histórico...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
@@ -339,6 +393,6 @@
         </div>
     </footer>
 
-    <script src="admin.js"></script>
+    <script src="js/admin.js"></script>
 </body>
 </html>

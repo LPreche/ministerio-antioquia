@@ -1,17 +1,36 @@
 :root {
     --primary-color: #3E260E;
-    --secondary-color: #A8A9AD; /* Cor Cinza do Texto MOVIMENTO */
-    --bg-color: #F4F4F4; /* Fundo Claro */
-    --text-color: #333;
+    --primary-hover: #543414;
+    --secondary-color: #72747a;
+    --bg-color: #F8F7F4;
     --card-bg: #ffffff;
-    --font-main: 'Roboto', sans-serif;
-    --font-script: 'Playfair Display', serif;
+    --text-color: #2D2D2D;
+    --text-muted: #666666;
+    --border-color: #E6E2DC;
+    --symbol-color: #B08C68;
+    --symbol-hover: #c49d77;
+    --accent-color: #D4AF37;
+    --success-color: #2E7D32;
+    --danger-color: #D32F2F;
+    --shadow-sm: 0 2px 8px rgba(62, 38, 14, 0.06);
+    --shadow-md: 0 8px 24px rgba(62, 38, 14, 0.08);
+    --shadow-lg: 0 16px 40px rgba(62, 38, 14, 0.12);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-main: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-script: 'Playfair Display', Georgia, serif;
     --font-handwritten: 'Kalam', cursive;
-    --symbol-color: #B08C68; /* Cor do símbolo na logo */
 }
 
 html {
     scroll-behavior: smooth;
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
 }
 
 body {
@@ -23,19 +42,25 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 header {
-    background: var(--primary-color);
+    background: rgba(62, 38, 14, 0.96);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: var(--card-bg);
-    padding: 10px 5%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    padding: 6px 5%;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+    border-bottom: 1px solid rgba(176, 140, 104, 0.25);
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
+    transition: var(--transition);
 }
 
 .logo-container {
@@ -44,44 +69,43 @@ header {
 }
 
 .logo {
-    height: 70px; /* Ajustado para 70px para manter a consistência do layout */
+    height: 44px;
+    width: auto;
+    border-radius: var(--radius-sm);
+    transition: transform 0.3s ease;
+}
+
+.logo-container:hover .logo {
+    transform: scale(1.03);
 }
 
 .brand-name {
-    position: static; /* Remove o posicionamento absoluto para o layout desktop */
+    position: static;
     transform: none;
     text-align: left;
-    margin-left: 20px; /* Espaço fixo para agrupar com a logo à esquerda */
+    margin-left: 14px;
 }
 
 h1 {
     margin: 0;
-    font-family: var(--font-script); /* Fonte mais atrativa */
-    font-size: 1.8rem; /* Fonte reduzida para caber na linha */
-    color: var(--symbol-color); /* Altera a cor para a do símbolo */
-    font-weight: 500;
-    line-height: 1;
-    text-transform: none; /* Remove o uppercase para a fonte script */
-    opacity: 1; /* Garante visibilidade */
-    animation: none; /* Remove animação de entrada */
-}
-
-/* Ajuste para telas de celular pequenas para evitar que o título sobreponha a logo */
-@media (max-width: 450px) {
-    h1 {
-        font-size: 1.6rem; /* Ajuste fino para o novo layout mobile */
-    }
+    font-family: var(--font-script);
+    font-size: clamp(1.2rem, 2vw, 1.45rem);
+    color: var(--symbol-color);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.5px;
+    text-transform: none;
+    opacity: 1;
 }
 
 p.subtitle-script {
     margin: 0;
     font-family: var(--font-script);
     font-style: italic;
-    font-size: 1.1rem; /* Fonte reduzida para caber na linha */
-    color: var(--symbol-color); /* Altera a cor para a do símbolo */
-    opacity: 1; /* Garante visibilidade */
-    animation: none; /* Remove animação de entrada */
-    padding-left: 20px; /* Ajusta o recuo para o novo layout */
+    font-size: clamp(0.78rem, 1.2vw, 0.92rem);
+    color: var(--symbol-hover);
+    opacity: 0.95;
+    padding-left: 8px;
 }
 
 /* --- Animações do Cabeçalho --- */
@@ -133,33 +157,50 @@ p.subtitle-script {
 nav {
     display: flex;
     justify-content: center;
-    gap: 15px; /* Aumentado o espaçamento entre os itens do menu */
-    margin-left: auto; /* Empurra a navegação e os itens à direita para a direita */
+    gap: 8px;
+    margin-left: auto;
 }
 
 nav a {
-    color: var(--card-bg); /* Cor alterada para branco para melhor contraste no fundo transparente */
+    color: var(--card-bg);
     text-decoration: none;
-    padding: 8px 15px;
-    border-radius: 20px;
+    padding: 6px 14px;
+    border-radius: 18px;
     font-weight: 500;
-    transition: all 0.3s ease;
+    font-size: 0.88rem;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
 }
 
-nav a:hover, nav a.active {
-    background-color: rgba(255, 255, 255, 0.1); /* Fundo sutil para destaque */
-    color: var(--card-bg);
+nav a:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+nav a.active {
+    background-color: var(--symbol-color);
+    color: var(--primary-color);
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .nav-contribute-btn {
-    background-color: var(--symbol-color);
+    background: linear-gradient(135deg, var(--symbol-color), var(--symbol-hover));
     color: var(--primary-color) !important;
-    font-weight: bold;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(176, 140, 104, 0.35);
+    padding: 6px 15px;
+    font-size: 0.86rem;
 }
 
 .nav-contribute-btn:hover {
-    background-color: var(--card-bg) !important;
+    background: #ffffff !important;
     color: var(--primary-color) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .hamburger-menu {
@@ -194,7 +235,7 @@ body.nav-open .hamburger-menu span:nth-child(3) { transform: translateY(-8px) ro
 }
 
 .ibicco-logo {
-    height: 70px; /* Alinha com a nova altura da logo principal */
+    height: 44px; /* Alinha com a altura esbelta da logo principal */
     transition: opacity 0.3s ease, transform 0.3s ease;
     mix-blend-mode: lighten; /* Faz com que o fundo preto da imagem se mescle com o fundo do cabeçalho */
 }
@@ -222,11 +263,11 @@ main {
  * para garantir que ela não fique escondida atrás do cabeçalho.
  */
 .scroll-target {
-    scroll-margin-top: 100px; /* Altura do header (90px) + margem */
+    scroll-margin-top: 68px; /* Altura do header slim (~58px) + margem */
 }
 @media (max-width: 1328px) {
     .scroll-target {
-        scroll-margin-top: 100px; /* Altura do header (90px) + margem */
+        scroll-margin-top: 68px;
     }
 }
 /* Animação de scroll */
@@ -242,10 +283,10 @@ main {
 }
 
 .container {
-    width: 90%;
-    max-width: 900px;
+    width: 92%;
+    max-width: 1140px;
     margin: 0 auto;
-    padding: 20px 0;
+    padding: 24px 0;
 }
 
 /* Garante que as seções principais da home tenham a mesma altura e conteúdo centralizado */
@@ -265,7 +306,7 @@ main {
     color: var(--card-bg); /* Muda a cor do texto para branco para melhor contraste */
     text-align: center;
     position: relative;
-    height: calc(100dvh - 90px); /* Ajusta a altura para preencher a tela descontando o cabeçalho de 90px */
+    height: calc(100dvh - 58px); /* Ajusta a altura para preencher a tela descontando o cabeçalho slim */
     /* Remove o padding vertical herdado para evitar que a altura ultrapasse 100vh.
        A centralização vertical do conteúdo já é feita pelo 'justify-content: center' do flexbox. */
     padding-top: 0;
@@ -277,7 +318,7 @@ main {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('imagens/hero-background.png');
+    background-image: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('../imagens/hero-background.png');
     background-size: cover;
     background-position: center;
     background-attachment: fixed; /* Cria o efeito parallax */
@@ -435,41 +476,41 @@ h3 {
 
 @media (max-width: 1328px) {
     header {
-        justify-content: space-between; /* Garante que logo e hamburger fiquem nas pontas */
+        justify-content: space-between;
     }
 
     .brand-name {
-        /* Em telas menores, o nome volta a ser absoluto e centralizado */
         position: absolute;
         left: 50%;
-        top: 45px; /* Metade da altura do header (90px / 2) para centralizar */
+        top: 50%;
         transform: translate(-50%, -50%);
         text-align: center;
         margin-left: 0;
     }
 
     p.subtitle-script {
-        /* Remove o recuo na visão mobile, pois o .brand-name já centraliza todo o texto */
         padding-left: 0;
     }
 
     .hamburger-menu {
-        display: block; /* Mostra o hamburguer em telas menores */
+        display: block;
     }
 
     nav {
-        display: flex; /* Alterado de 'none' para 'flex' para permitir animação */
-        position: absolute; /* Para o menu dropdown */
-        margin-left: 0; /* Reseta a margem do layout desktop */
-        top: 90px; /* Altura do header (70px logo + 10px padding * 2) */
+        display: flex;
+        position: absolute;
+        margin-left: 0;
+        top: 100%;
         left: 0;
         width: 100%;
-        background-color: var(--primary-color);
+        background-color: rgba(62, 38, 14, 0.98);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         flex-direction: column;
         align-items: center;
         padding: 20px 0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        /* Propriedades para animação de fade e slide */
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        border-bottom: 2px solid var(--symbol-color);
         opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
@@ -480,14 +521,20 @@ h3 {
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
-        transition-delay: 0s; /* Garante que a transição de entrada comece imediatamente */
+        transition-delay: 0s;
     }
 
-    /* Animação em cascata para os itens do menu */
     nav a {
         opacity: 0;
         transform: translateY(-15px);
         transition: opacity 0.4s ease, transform 0.4s ease;
+        width: 88%;
+        max-width: 320px;
+        text-align: center;
+        justify-content: center;
+        padding: 12px 20px;
+        font-size: 1.05rem;
+        margin: 4px 0;
     }
 
     nav.nav-open a {
@@ -495,15 +542,41 @@ h3 {
         transform: translateY(0);
     }
 
-    /* Adiciona um atraso para cada item, criando o efeito cascata */
-    nav.nav-open a:nth-child(1) { transition-delay: 0.1s; }
-    nav.nav-open a:nth-child(2) { transition-delay: 0.15s; }
-    nav.nav-open a:nth-child(3) { transition-delay: 0.2s; }
-    nav.nav-open a:nth-child(4) { transition-delay: 0.25s; }
-    nav.nav-open a:nth-child(5) { transition-delay: 0.3s; }
-    nav.nav-open a:nth-child(6) { transition-delay: 0.35s; }
-    nav.nav-open a:nth-child(7) { transition-delay: 0.4s; }
-    nav.nav-open a:nth-child(8) { transition-delay: 0.45s; }
+    nav.nav-open a:nth-child(1) { transition-delay: 0.05s; }
+    nav.nav-open a:nth-child(2) { transition-delay: 0.1s; }
+    nav.nav-open a:nth-child(3) { transition-delay: 0.15s; }
+    nav.nav-open a:nth-child(4) { transition-delay: 0.2s; }
+    nav.nav-open a:nth-child(5) { transition-delay: 0.25s; }
+    nav.nav-open a:nth-child(6) { transition-delay: 0.3s; }
+    nav.nav-open a:nth-child(7) { transition-delay: 0.35s; }
+    nav.nav-open a:nth-child(8) { transition-delay: 0.4s; }
+}
+
+@media (max-width: 520px) {
+    header {
+        padding: 6px 4%;
+    }
+    .brand-name {
+        position: static;
+        transform: none;
+        margin-left: 8px;
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+    }
+    h1 {
+        font-size: 1.15rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    p.subtitle-script {
+        font-size: 0.75rem;
+        padding-left: 4px;
+    }
+    .logo {
+        height: 38px;
+    }
 }
 
 .card {
@@ -524,72 +597,155 @@ h3 {
 footer {
     background: var(--primary-color);
     color: var(--card-bg);
-    text-align: center;
-    padding: 20px 0;
-    border-top: 2px solid var(--symbol-color); /* Linha separadora */
+    padding: 12px 0;
+    border-top: 1px solid rgba(176, 140, 104, 0.35);
+}
+
+footer .container {
+    padding: 0 !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 footer p {
-    margin: 5px 0;
-    font-size: 0.9rem;
-    opacity: 0.8;
+    margin: 0;
+    font-size: 0.82rem;
+    opacity: 0.85;
+}
+
+footer a {
+    color: var(--card-bg);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+footer a:hover {
+    opacity: 1;
+    color: var(--symbol-hover);
 }
 
 .footer-social {
-    margin-top: 15px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    margin-top: 0;
+    display: inline-flex;
     align-items: center;
-    gap: 25px; /* Espaçamento entre os links */
+    gap: 16px;
 }
 
 .footer-social a {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    color: var(--card-bg);
-    text-decoration: none;
-    opacity: 0.8;
-    transition: opacity 0.3s ease;
-}
-
-.footer-social a:hover {
-    opacity: 1;
+    gap: 6px;
+    font-size: 0.82rem;
+    opacity: 0.85;
 }
 
 .footer-social svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
+}
+
+@media (max-width: 820px) {
+    footer {
+        padding: 14px 0;
+    }
+    footer .container {
+        flex-direction: column;
+        text-align: center;
+        gap: 6px;
+    }
+    footer p {
+        margin: 2px 0;
+    }
+    .footer-social {
+        margin-top: 4px;
+        gap: 14px;
+    }
 }
 
 /* --- Estilos para o novo Relógio de Oração --- */
 
 .prayer-requests-section {
     background-color: var(--card-bg);
-    padding: 30px 0;
-    margin-bottom: 40px;
-    border-bottom: 1px solid #eee;
+    padding: 24px;
+    margin-bottom: 35px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
 }
 
-.prayer-requests-section h3 {
-    text-align: center;
-    margin-top: 0;
+.prayer-requests-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
 }
 
-.prayer-requests-section ul {
+#motivos-title {
+    margin: 0;
+    text-align: left;
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    color: var(--primary-color);
+    font-family: var(--font-script);
+}
+
+#motivos-subtitle {
+    margin: 4px 0 0 0;
+    color: var(--secondary-color);
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+#btn-reset-motivos-view {
+    padding: 8px 18px;
+    font-size: 0.88rem;
+    border-radius: 20px;
+    cursor: pointer;
+    background: var(--symbol-color);
+    color: var(--primary-color);
+    font-weight: 600;
+    border: none;
+    transition: var(--transition);
+}
+
+#btn-reset-motivos-view:hover {
+    background: var(--symbol-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.prayer-requests-section ul,
+#prayer-motivos-list {
     list-style: none;
     padding: 0;
+    margin: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 }
 
-.prayer-requests-section li {
+.prayer-requests-section li,
+#prayer-motivos-list li {
     background: var(--bg-color);
-    padding: 15px;
-    border-radius: 8px;
-    border-left: 3px solid var(--symbol-color);
+    padding: 16px 18px;
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--symbol-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    transition: var(--transition);
+}
+
+#prayer-motivos-list li:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
 }
 
 .prayer-layout-grid {
@@ -630,23 +786,89 @@ footer p {
 }
 
 #prayer-name-list li {
-    padding: 12px 15px;
+    padding: 10px 14px;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 1rem;
-    transition: background-color 0.3s ease;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+}
+
+#prayer-name-list li:hover {
+    background-color: #fcf9f8;
 }
 
 #prayer-name-list li .hour {
     font-weight: 700;
     color: var(--primary-color);
+    font-size: 0.88rem;
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+#prayer-name-list li .name {
+    flex-grow: 1;
+    text-align: right;
+}
+
+#prayer-name-list li .name.is-available {
+    color: #999;
+    font-style: italic;
+    font-weight: normal;
+}
+
+#prayer-name-list li .name.is-pending {
+    color: #b9770e;
+    background: rgba(243, 156, 18, 0.12);
+    font-style: italic;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px dashed rgba(185, 119, 14, 0.4);
+    display: inline-block;
+}
+
+#prayer-name-list li .badge-motive-pill {
+    background: rgba(160, 82, 45, 0.12);
+    color: var(--primary-color);
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+#prayer-name-list li.is-selected {
+    background-color: #f4ede9;
+    border-left-color: var(--secondary-color);
 }
 
 #prayer-name-list li.active {
-    background-color: #f0eceb;
+    background-color: #f7ece8;
     font-weight: 700;
+    border-left-color: var(--primary-color);
+}
+
+.motive-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #e6dad4;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.motive-general-badge {
+    background: #eef2f7;
+    color: #34495e;
 }
 
 .prayer-clock-container {
@@ -757,47 +979,87 @@ footer p {
 
 @media (max-width: 900px) {
     .prayer-layout-grid {
-        grid-template-columns: 1fr; /* Stack columns */
+        grid-template-columns: 1fr;
     }
     .prayer-name-list-wrapper {
-        margin-bottom: 40px;
+        margin-bottom: 30px;
     }
-    /* Redimensiona o relógio para telas menores onde o layout é empilhado */
     .clock-face {
-        width: 400px;
-        height: 400px;
+        width: 390px;
+        height: 390px;
         border-width: 8px;
     }
     .clock-center {
-        width: 180px;
-        height: 180px;
+        width: 170px;
+        height: 170px;
     }
     .clock-center .current-time {
-        font-size: 3rem;
+        font-size: 2.8rem;
     }
     .clock-slot {
-        width: 50px;
-        height: 50px;
-        margin: -25px;
+        width: 46px;
+        height: 46px;
+        margin: -23px;
+        font-size: 0.95rem;
     }
 }
 
 @media (max-width: 600px) {
     .clock-face {
-        /* On mobile, transform the clock into a simple status display */
-        width: 100%;
-        height: auto;
-        border: none;
-        background-color: transparent;
-        padding: 20px 0;
+        width: 310px;
+        height: 310px;
+        border-width: 6px;
+        background-color: rgba(62, 38, 14, 0.03);
+        margin: 10px auto;
     }
     .clock-center {
-        /* Make the center display the main element */
-        width: 250px;
-        height: 250px;
+        width: 140px;
+        height: 140px;
+        padding: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.12);
     }
-    .clock-slot, .clock-hand {
-        display: none; /* Hide slots and hand on small screens */
+    .clock-center .current-time {
+        font-size: 2.2rem;
+    }
+    #current-prayer {
+        font-size: 0.82rem;
+    }
+    .clock-slot {
+        width: 36px;
+        height: 36px;
+        margin: -18px;
+        font-size: 0.78rem;
+    }
+    .clock-hand {
+        width: 3px;
+    }
+}
+
+@media (max-width: 360px) {
+    .clock-face {
+        width: 270px;
+        height: 270px;
+        border-width: 5px;
+    }
+    .clock-center {
+        width: 120px;
+        height: 120px;
+        padding: 8px;
+    }
+    .clock-center .current-time {
+        font-size: 1.85rem;
+    }
+    #current-prayer {
+        font-size: 0.72rem;
+    }
+    .clock-slot {
+        width: 30px;
+        height: 30px;
+        margin: -15px;
+        font-size: 0.68rem;
+    }
+    .clock-hand {
+        width: 2.5px;
     }
 }
 
@@ -1124,9 +1386,10 @@ body.modal-open {
 
 .news-card-img-wrapper {
     width: 100%;
-    height: 180px;
+    aspect-ratio: 16 / 9;
+    height: auto;
     overflow: hidden;
-    background-color: #e0e0e0;
+    background-color: #f0ebe4;
 }
 
 .news-card-img-wrapper img {
@@ -1162,6 +1425,7 @@ body.modal-open {
     /* Trunca o texto para 3 linhas */
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1184,34 +1448,76 @@ body.modal-open {
 }
 
 /* --- Estilos para o Modal de Notícias --- */
+#news-modal .modal-content {
+    max-width: 760px;
+    padding: clamp(20px, 4vw, 36px);
+    border-radius: var(--radius-md);
+}
+
 #news-modal .modal-body {
     flex-direction: column;
     align-items: stretch;
     text-align: left;
-    gap: 20px;
+    gap: 16px;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 #news-modal #modal-img {
     width: 100%;
-    height: auto;
-    max-height: 300px;
+    aspect-ratio: 16 / 9;
+    max-height: 380px;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
 }
 
 #news-modal #modal-title {
-    margin: 0;
+    margin: 4px 0 0;
+    font-family: var(--font-script);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    color: var(--primary-color);
+    line-height: 1.25;
 }
 
 #news-modal #modal-date {
     font-size: 0.9rem;
-    color: #777;
-    margin: -15px 0 10px 0;
+    color: var(--text-muted);
+    margin: 0;
     font-style: italic;
 }
 
 #news-modal #modal-full-story {
-    line-height: 1.7;
+    line-height: 1.8;
+    color: var(--text-color);
+    font-size: 1.05rem;
+}
+
+#news-modal #modal-full-story p {
+    margin-bottom: 16px;
+}
+
+#news-modal #modal-full-story h2,
+#news-modal #modal-full-story h3 {
+    color: var(--primary-color);
+    font-family: var(--font-script);
+    margin-top: 24px;
+    margin-bottom: 10px;
+}
+
+#news-modal #modal-full-story ul,
+#news-modal #modal-full-story ol {
+    padding-left: 24px;
+    margin-bottom: 16px;
+}
+
+#news-modal #modal-full-story blockquote {
+    border-left: 4px solid var(--symbol-color);
+    margin: 20px 0;
+    padding: 10px 20px;
+    background: #fdfaf7;
+    font-style: italic;
+    color: var(--primary-hover);
 }
 
 /* --- Estilos para o Quadro Tito --- */
@@ -1239,22 +1545,27 @@ body.modal-open {
 }
 
 .titus-board {
-    background-color: #D1a460; /* Cor de cortiça */
-    background-image: url('https://www.transparenttextures.com/patterns/grid-noise.png');
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 0 15px rgba(0,0,0,0.3);
-    border: 15px solid #6F4E37; /* Moldura de madeira escura */
-    margin: 20px 5vw 40px;
+    background-color: #cda268;
+    background-image: 
+        radial-gradient(#b2854b 15%, transparent 16%),
+        radial-gradient(#b2854b 15%, transparent 16%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+    padding: clamp(24px, 4vw, 44px);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg), inset 0 0 30px rgba(0, 0, 0, 0.35);
+    border: clamp(8px, 1.8vw, 16px) solid #5e3b1c;
+    margin: 20px auto 40px;
+    max-width: 1200px;
 }
 
 .titus-board-title {
     font-family: var(--font-handwritten);
-    font-size: clamp(3rem, 12vw, 7rem); /* Tamanho de fonte responsivo */
-    color: #6F4E37; /* Cor da moldura de madeira */
+    font-size: clamp(2.5rem, 8vw, 5.5rem);
+    color: #5e3b1c;
     text-align: center;
-    margin: 0 0 30px 0;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    margin: 0 0 25px 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     line-height: 1;
 }
 
@@ -1272,23 +1583,24 @@ body.modal-open {
 
 .titus-board-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 22px;
 }
 
 .post-it {
-    padding: 15px;
-    box-shadow: 3px 3px 15px rgba(0,0,0,0.1);
+    padding: 18px 14px;
+    box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
     position: relative;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center; 
-    min-height: 150px;
-    opacity: 0; /* Começa invisível para a animação */
+    min-height: 155px;
+    opacity: 0;
     transform: rotate(var(--rotation, 0deg));
+    border-radius: 2px;
 }
 
 .post-it::before {
@@ -1359,35 +1671,40 @@ body.modal-open {
 .titus-board.is-visible .post-it:nth-child(11) { animation-delay: 0.55s; }
 .titus-board.is-visible .post-it:nth-child(12) { animation-delay: 0.6s; }
 
-@media (max-width: 1200px) {
-    .titus-board-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-@media (max-width: 992px) {
-    .titus-board-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
 @media (max-width: 768px) {
-    /* Centraliza o cabeçalho do quadro em telas menores */
     .titus-header-container {
         flex-direction: column;
         justify-content: center;
+        text-align: center;
+        gap: 14px;
     }
 
     .titus-board {
-        padding: 20px;
-        border-width: 10px;
+        padding: 20px 14px;
+        border-width: 8px;
+        margin: 15px 8px 30px;
     }
     .titus-board-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 16px;
     }
 }
 
 @media (max-width: 480px) {
+    .titus-board-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .post-it {
+        min-height: 130px;
+        padding: 12px 8px;
+    }
+    .post-it-text {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 340px) {
     .titus-board-grid {
         grid-template-columns: 1fr;
     }
@@ -1520,14 +1837,11 @@ body.modal-open {
 
 .events-grid-full-page {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
 }
 
 @media (max-width: 992px) {
-    .events-grid-full-page {
-        grid-template-columns: 1fr;
-    }
     .event-card--highlighted-full {
         flex-direction: column;
         text-align: center;
@@ -1632,21 +1946,30 @@ body.modal-open {
 .pix-key {
     background-color: var(--card-bg);
     color: var(--primary-color);
-    padding: 10px 15px;
-    border-radius: 5px;
-    font-weight: bold;
-    white-space: nowrap; /* Impede a quebra de linha */
-    overflow: hidden; /* Esconde o texto que transborda */
-    text-overflow: ellipsis; /* Adiciona "..." ao final do texto cortado */
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     margin: 0 !important;
     flex-grow: 1;
     cursor: pointer;
-    transition: transform 0.1s ease;
-    user-select: none; /* Impede a seleção de texto acidental ao clicar */
+    transition: var(--transition);
+    user-select: none;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pix-key:hover {
+    border-color: var(--symbol-color);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
 }
 
 .pix-key:active {
-    transform: scale(0.98); /* Efeito de clique para feedback */
+    transform: scale(0.98);
 }
 
 /* Garante que a chave PIX no modal também seja truncada e ocupe a largura total */
@@ -1657,21 +1980,23 @@ body.modal-open {
 
 .pix-qr-btn {
     flex-shrink: 0;
-    background-color: var(--symbol-color);
+    background: linear-gradient(135deg, var(--symbol-color), var(--symbol-hover));
     color: var(--primary-color);
     border: none;
-    width: 45px;
-    height: 45px;
-    border-radius: 5px;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.3s ease;
+    transition: var(--transition);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .pix-qr-btn:hover {
-    background-color: var(--card-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
 #pix-qr-code-img {
@@ -1688,10 +2013,11 @@ body.modal-open {
 
 .contact-form-container {
     background-color: var(--card-bg);
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    max-width: 700px;
+    padding: clamp(24px, 5vw, 44px);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    max-width: 740px;
     margin: 20px auto;
 }
 
@@ -1709,20 +2035,22 @@ body.modal-open {
 .form-group input,
 .form-group textarea {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    padding: 13px 16px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
     font-family: var(--font-main);
     font-size: 1rem;
-    box-sizing: border-box; /* Garante que o padding não aumente a largura */
-    transition: border-color 0.3s, box-shadow 0.3s;
+    background: #ffffff;
+    color: var(--text-color);
+    box-sizing: border-box;
+    transition: var(--transition);
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(62, 38, 14, 0.2);
+    border-color: var(--symbol-color);
+    box-shadow: 0 0 0 3px rgba(176, 140, 104, 0.25);
 }
 
 .form-button-group {
@@ -1734,6 +2062,15 @@ body.modal-open {
 .form-button-group .btn {
     flex: 1;
     text-align: center;
+}
+
+@media (max-width: 600px) {
+    .form-button-group {
+        flex-direction: column;
+    }
+    .form-button-group .btn {
+        width: 100%;
+    }
 }
 
 /* --- Estilos para o Mapa --- */
@@ -1867,49 +2204,88 @@ body.modal-open {
     background-color: var(--bg-color); /* Fundo padrão do site */
 }
 
-#admin-header {
-    /* Reutiliza o estilo do header principal, mas pode ter ajustes */
-    /* O JS já aplica 'display: flex', o que nos permite alinhar itens. */
-    justify-content: center; /* Centraliza os itens do cabeçalho */
-    gap: 25px; /* Adiciona um espaçamento consistente entre os itens */
+/* --- Estilos do Modal de Login (Admin) --- */
+#login-modal .modal-content {
+    border-radius: var(--radius-md);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-color);
 }
 
-/* Remove margens laterais dos filhos diretos para que o 'gap' controle o espaçamento */
+#login-modal h3 {
+    font-family: var(--font-script);
+    font-size: 1.75rem;
+    color: var(--primary-color);
+    margin: 8px 0 6px;
+}
+
+#login-modal p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 22px;
+}
+
+#login-error {
+    background-color: #fee2e2;
+    color: #b91c1c !important;
+    border: 1px solid #fca5a5;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    margin: 12px 0 16px;
+    text-align: left;
+}
+
+#admin-header {
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 5%;
+}
+
 #admin-header > .brand-name,
 #admin-header > .ibicco-logo-container,
 #admin-header > #logout-btn {
     margin-left: 0;
 }
 
-/* Oculta as logos no cabeçalho do admin em telas menores para evitar sobreposição
-   e garante que o layout não quebre como o header principal. */
 @media (max-width: 1328px) {
     #admin-header {
-        justify-content: center; /* Mantém a centralização dos itens restantes */
+        justify-content: space-between;
     }
     #admin-header .brand-name {
-        position: static; /* Previne o posicionamento absoluto herdado do header principal */
+        position: static;
         transform: none;
     }
     #admin-header .logo-container {
-        display: none; /* Oculta a logo principal */
+        display: flex;
     }
-    /* A logo da IBI Chapecó já é ocultada em um seletor geral neste breakpoint. */
+}
+
+@media (max-width: 520px) {
+    #admin-header .logo {
+        height: 38px;
+    }
+    #admin-header .brand-name h1 {
+        font-size: 1.05rem;
+    }
 }
 
 #logout-btn {
-    background-color: var(--symbol-color);
-    color: var(--primary-color) !important;
-    padding: 8px 18px;
-    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 8px 20px;
     border-radius: 20px;
     cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--transition);
 }
+
 #logout-btn:hover {
-    background-color: var(--card-bg) !important;
-    color: var(--primary-color) !important;
+    background-color: #d32f2f !important;
+    border-color: #d32f2f;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(211, 47, 47, 0.35);
 }
 
 #admin-dashboard {
@@ -1949,21 +2325,26 @@ body.modal-open {
 
 .admin-tabs-nav {
     display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 30px;
-    padding: 10px 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
+    padding: 8px 12px;
     background-color: var(--card-bg);
-    border-bottom: 1px solid #eee;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    margin-bottom: 30px;
 }
 
-/* Estilos para o novo menu select no admin em telas móveis */
+.admin-tabs-nav::-webkit-scrollbar {
+    display: none;
+}
+
 .admin-mobile-nav {
-    display: none; /* Escondido por padrão em telas grandes */
-    margin-bottom: 30px;
+    display: none;
+    margin-bottom: 25px;
 }
 
 .admin-mobile-nav label {
@@ -1976,8 +2357,8 @@ body.modal-open {
 #admin-section-select {
     width: 100%;
     padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
     font-family: var(--font-main);
     font-size: 1rem;
     background-color: white;
@@ -1986,24 +2367,26 @@ body.modal-open {
 .admin-tab-btn {
     background-color: transparent;
     border: none;
-    padding: 10px 20px;
+    padding: 10px 18px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-color);
-    border-radius: 5px;
-    transition: all 0.3s ease;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    white-space: nowrap;
 }
 
 .admin-tab-btn:hover {
-    background-color: #f0f0f0;
+    background-color: var(--bg-color);
     color: var(--primary-color);
 }
 
 .admin-tab-btn.active {
     background-color: var(--primary-color);
     color: var(--card-bg);
-    font-weight: bold;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(62, 38, 14, 0.25);
 }
 
 .admin-sections-container {
@@ -2164,44 +2547,73 @@ body.modal-open {
     .admin-table thead { display: none; }
 
     .admin-tabs-nav {
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        padding: 8px 10px;
+        gap: 6px;
+        margin-bottom: 20px;
+        border-radius: var(--radius-sm);
+    }
+
+    .admin-tab-btn {
+        padding: 8px 14px;
+        font-size: 0.88rem;
+    }
+
+    .admin-mobile-nav {
         display: none;
     }
-    .admin-mobile-nav {
-        display: block;
-    }
+
     .admin-table tr { 
         display: block; 
         margin-bottom: 20px; 
-        border: 1px solid #ddd; 
-        border-radius: 8px; 
-        padding: 15px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        background: var(--card-bg);
+        border: 1px solid var(--border-color); 
+        border-radius: var(--radius-sm); 
+        padding: 16px; 
+        box-shadow: var(--shadow-sm);
     }
     .admin-table td { 
         display: block; 
         text-align: left; 
-        border-bottom: 1px dotted #ccc; 
-        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color); 
+        padding: 10px 0;
     }
     .admin-table td:before { 
         content: attr(data-label);
         display: block;
-        font-weight: bold;
-        color: var(--primary-color);
-        margin-bottom: 8px; /* Espaço entre a nova linha e o conteúdo */
-        padding-bottom: 8px; /* Espaço entre o texto do label e a nova linha */
-        border-bottom: 1px dotted #ccc; /* Adiciona a linha divisória interna */
+        font-weight: 700;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--symbol-color);
+        margin-bottom: 4px;
     }
     .admin-table td:last-child { border-bottom: 0; }
     .admin-table td[data-label="Ações"] { 
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        padding-top: 15px;
+        gap: 8px;
+        padding-top: 14px;
         margin-top: 10px;
-        border-bottom: none; /* Garante que não haja borda inferior */
+        border-top: 1px solid var(--border-color);
+        border-bottom: none;
     }
     .admin-table td[data-label="Ações"]::before { display: none; }
+    .admin-table td[data-label="Ações"] button,
+    .admin-table td[data-label="Ações"] .btn {
+        flex: 1;
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 14px;
+        font-size: 0.9rem;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+    }
     .admin-table td.truncate-cell {
         white-space: normal;
         overflow: visible;

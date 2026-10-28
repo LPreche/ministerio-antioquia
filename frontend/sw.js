@@ -1,6 +1,6 @@
 // c:\github\ministerio-antioquia\sw.js
 
-const CACHE_NAME = 'movimento-antioquia-cache-v3'; // Versão do cache incrementada para limpar caches antigos
+const CACHE_NAME = 'movimento-antioquia-cache-v8'; // Versão do cache incrementada para limpar caches antigos
 // Lista de arquivos essenciais para o funcionamento offline do app
 const urlsToCache = [
   '/',
@@ -12,10 +12,11 @@ const urlsToCache = [
   '/eventos.html',
   '/contato.html',
   '/admin.html',
-  '/style.css',
-  '/script.js',
-  '/admin.js',
-  '/imagens/logo.jpg',
+  '/css/style.css',
+  '/js/script.js',
+  '/js/admin.js',
+  '/imagens/logo.png',
+  '/imagens/logo_pwa.jpg',
   '/imagens/hero-background.png',
   '/imagens/icons/icon-192x192.png',
   '/imagens/icons/icon-512x512.png',
@@ -24,6 +25,7 @@ const urlsToCache = [
 
 // Evento de instalação: abre o cache e adiciona os arquivos da lista
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Força a ativação imediata do novo Service Worker
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -65,9 +67,11 @@ self.addEventListener('fetch', event => {
 // Evento de ativação: limpa caches antigos para manter o app atualizado
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(caches.keys().then(cacheNames => Promise.all(cacheNames.map(cacheName => {
-    if (cacheWhitelist.indexOf(cacheName) === -1) return caches.delete(cacheName);
-  }))));
+  event.waitUntil(
+    caches.keys().then(cacheNames => Promise.all(cacheNames.map(cacheName => {
+      if (cacheWhitelist.indexOf(cacheName) === -1) return caches.delete(cacheName);
+    }))).then(() => self.clients.claim()) // Assume o controle das páginas abertas imediatamente
+  );
 });
 
 // --- PUSH NOTIFICATION LISTENERS ---

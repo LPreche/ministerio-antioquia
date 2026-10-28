@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relógio de Oração - Movimento Antioquia</title>
-    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
-    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="imagens/logo.png" type="image/png">
+    <link rel="stylesheet" href="css/style.css">
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <!-- Theme color for browser UI -->
@@ -14,14 +14,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Antioquia">
-    <link rel="apple-touch-icon" href="imagens/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="imagens/logo_pwa.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Roboto:wght@300;400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body class="relogio-page">
 
     <header>
         <div class="logo-container">
-            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+            <a href="index.html"><img src="imagens/logo.png" alt="Logo Movimento Antioquia" class="logo"></a>
         </div>
         <div class="brand-name">
             <h1>MOVIMENTO</h1>
@@ -49,19 +49,27 @@
     <main>
         <section class="prayer-requests-section">
             <div class="container animate-on-scroll">
-                <h3>Motivos de Oração</h3>
-                <ul>
-                    <li>Pela liderança da igreja e suas famílias.</li>
-                    <li>Pelos missionários no campo e seus projetos.</li>
-                    <li>Pelo avivamento espiritual em nossa cidade e nação.</li>
-                    <li>Pelas famílias da nossa comunidade.</li>
+                <div class="prayer-requests-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                    <div>
+                        <h3 id="motivos-title" style="margin: 0; text-align: left;">Motivos de Oração</h3>
+                        <p id="motivos-subtitle" style="margin: 4px 0 0 0; color: var(--secondary-color); font-weight: 500; font-size: 0.95rem; text-align: left;">Turno atual</p>
+                    </div>
+                    <button id="btn-reset-motivos-view" class="btn btn-secondary" style="display: none; padding: 6px 14px; font-size: 0.85rem;">Ver Turno Atual</button>
+                </div>
+                <ul id="prayer-motivos-list">
+                    <li>Carregando motivos de oração...</li>
                 </ul>
             </div>
         </section>
 
         <div class="prayer-layout-grid container">
             <aside class="prayer-name-list-wrapper animate-on-scroll">
-                <h4>Escala de Oração</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
+                    <h4 style="margin: 0;">Escala de Oração</h4>
+                    <button id="btn-open-voluntariar" class="btn btn-primary" style="padding: 7px 14px; font-size: 0.9rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 6px;">
+                        <span>🙏</span> Se Voluntariar
+                    </button>
+                </div>
                 <ul id="prayer-name-list"></ul>
             </aside>
             <div class="prayer-clock-wrapper animate-on-scroll">
@@ -79,7 +87,43 @@
     </main>
 
     <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
-    <script src="script.js"></script>
+    <script src="js/script.js?v=6"></script>
+
+    <!-- Modal Se Voluntariar -->
+    <div id="modal-voluntariar" class="modal-overlay">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 16px;">
+                <h3 style="margin: 0; color: var(--primary-color); font-size: 1.3rem;">🙏 Se Voluntariar para Orar</h3>
+                <button type="button" class="close-modal" id="btn-close-voluntariar" style="background: none; border: none; font-size: 1.6rem; cursor: pointer; color: #666; line-height: 1;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.92rem; color: var(--text-color); margin-bottom: 16px;">
+                    Junte-se ao nosso relógio de oração! Preencha seu nome e sobrenome e selecione o ciclo de 15 minutos em que deseja interceder. Sua solicitação será enviada para confirmação do administrador.
+                </p>
+                <form id="form-voluntariar">
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="vol-nome-completo" style="display: block; font-weight: 600; margin-bottom: 6px;">Nome Completo (Nome e Sobrenome) *</label>
+                        <input type="text" id="vol-nome-completo" name="vol_nome_completo" placeholder="Ex: Maria Oliveira" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: var(--radius-sm); font-size: 1rem;">
+                        <small id="vol-nome-error" style="color: #dc3545; display: none; margin-top: 4px; font-size: 0.85rem;">Por favor, digite seu nome e sobrenome.</small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 18px;">
+                        <label for="vol-horario-select" style="display: block; font-weight: 600; margin-bottom: 6px;">Horário Desejado (Ciclo de 15 min) *</label>
+                        <select id="vol-horario-select" name="vol_horario_escolhido" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: var(--radius-sm); font-size: 1rem; background: #fff;">
+                            <option value="">Carregando horários...</option>
+                        </select>
+                    </div>
+
+                    <p id="vol-form-status" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 14px;"></p>
+
+                    <div class="form-button-group" style="display: flex; justify-content: flex-end; gap: 10px;">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-voluntariar">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-voluntariar">Enviar Solicitação</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal de Manutenção -->
     <div id="maintenance-modal" class="modal-overlay">

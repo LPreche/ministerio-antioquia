@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!adminSectionsWrapper || index < 0 || index >= sections.length) return;
 
         tabButtons.forEach((btn, i) => btn.classList.toggle('active', i === index));
+        if (tabButtons[index]) {
+            tabButtons[index].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
         adminSectionsWrapper.style.transform = `translateX(-${index * 100}%)`;
 
         // Sincroniza o select do menu mobile com a aba ativa
@@ -77,6 +80,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Nova sugestão recebida! Atualizando a lista...');
                     loadAdminSugestoes(); // Recarrega a lista de sugestões pendentes
                 }
+                // Atualizações em tempo real do relógio e solicitações de voluntários
+                if (data.type === 'new_prayer_request' || data.type === 'prayer_clock_updated') {
+                    console.log('Atualização de voluntários/relógio recebida!');
+                    loadAdminSolicitacoes();
+                    loadAdminSolicitacoesHistorico();
+                    if (data.type === 'prayer_clock_updated') {
+                        loadAdminRelogios();
+                    }
+                }
             } catch (error) {
                 console.error('Erro ao processar mensagem SSE:', error);
             }
@@ -106,6 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAdminTito(); // Nova função para a seção unificada
         loadAdminSugestoes();
         loadAdminSugestoesHistorico();
+        loadAdminSolicitacoes();
+        loadAdminSolicitacoesHistorico();
         loadGeneralSettings();
         setupPushNotificationForm(); // Adiciona o listener para o novo formulário
 
@@ -261,6 +275,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function formatTimeInterval(timeStr) {
+        if (!timeStr) return '';
+        const parts = String(timeStr).split(':');
+        const h = parseInt(parts[0], 10) || 0;
+        const m = parseInt(parts[1], 10) || 0;
+        const endTotal = h * 60 + m + 15;
+        const endH = Math.floor(endTotal / 60) % 24;
+        const endM = endTotal % 60;
+        const startFmt = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const endFmt = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+        return `${startFmt} - ${endFmt}`;
+    }
+
+    function getAll15MinCycles() {
+        const slots = [];
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 15) {
+                const start = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                slots.push(`${start}:00`);
+            }
+        }
+        return slots;
+    }
+
+    function pickRandomAvailable15MinCycle(occupiedTimes = []) {
+        const allSlots = getAll15MinCycles();
+        const normOccupied = new Set(
+            occupiedTimes.map(t => {
+                if (!t) return '';
+                const parts = String(t).split(':');
+                const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+                const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+                return `${h}:${m}:00`;
+            }).filter(Boolean)
+        );
+        const available = allSlots.filter(s => !normOccupied.has(s));
+        if (available.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * available.length);
+        return available[randomIndex];
+    }
+
+    function generate15MinOptions(selectedTime, includeAllOption = false, occupiedTimes = []) {
+        let options = '';
+        if (includeAllOption) {
+            const isSelected = !selectedTime || selectedTime === 'todos' || selectedTime === 'geral';
+            options += `<option value="" ${isSelected ? 'selected' : ''}>Todos os horários (Geral)</option>`;
+        }
+        const normSelected = selectedTime ? String(selectedTime).substring(0, 5) : '';
+        const normOccupied = new Set(
+            occupiedTimes.map(t => {
+                if (!t) return '';
+                const parts = String(t).split(':');
+                const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+                const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+                return `${h}:${m}`;
+            }).filter(Boolean)
+        );
+
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 15) {
+                const start = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                const endTotal = h * 60 + m + 15;
+                const endH = Math.floor(endTotal / 60) % 24;
+                const endM = endTotal % 60;
+                const end = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                const val = `${start}:00`;
+                const isSel = (normSelected === start);
+                const isOcc = normOccupied.has(start) && !isSel;
+
+                if (isOcc) {
+                    options += `<option value="${val}" disabled>${start} - ${end} (Já possui motivo)</option>`;
+                } else {
+                    options += `<option value="${val}" ${isSel ? 'selected' : ''}>${start} - ${end}</option>`;
+                }
+            }
+        }
+        return options;
+    }
+
     async function loadAdminPrayerClock(relogioId, isEditable = false) {
         if (!relogioId) return;
         const tableBody = document.querySelector('#prayer-clock-table tbody');
@@ -275,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableBody.innerHTML = '<tr><td colspan="3">Nenhum voluntário cadastrado para este relógio.</td></tr>';
             } else {
                 items.forEach(item => {
-                    const hour = parseInt(item.vol_horario_escolhido.split(':')[0], 10);
+                    const timeLabel = formatTimeInterval(item.vol_horario_escolhido);
 
                     const actionsHtml = isEditable
                         ? `<button class="btn-edit" data-id="${item.id_voluntario}" data-section="prayer-clock">Editar</button>
@@ -284,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const row = `
                         <tr data-id="${item.id_voluntario}">
-                            <td data-label="Horário">${String(hour).padStart(2, '0')}:00</td>
+                            <td data-label="Horário">${timeLabel}</td>
                             <td data-label="Nome do Voluntário" class="truncate-cell" title="${escapeAttr(item.vol_nome_completo)}">${item.vol_nome_completo}</td>
                             <td data-label="Ações">
                                 ${actionsHtml}
@@ -311,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.innerHTML = '';
     
             if (items.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="2">Nenhum motivo de oração cadastrado para este relógio.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="3">Nenhum motivo de oração cadastrado para este relógio.</td></tr>';
             } else {
                 items.forEach(item => {
                     const actionsHtml = isEditable
@@ -319,8 +412,13 @@ document.addEventListener('DOMContentLoaded', () => {
                            <button class="btn-delete" data-id="${item.id_motivo}" data-section="motivos-oracao">Excluir</button>`
                         : `<span>Visualização</span>`;
 
+                    const cycleLabel = item.mot_horario
+                        ? `<span class="badge-cycle" style="background:#eef2f7;color:#2c3e50;padding:2px 8px;border-radius:4px;font-weight:600;font-size:0.85rem;">${formatTimeInterval(item.mot_horario)}</span>`
+                        : `<span style="color:#7f8c8d;font-style:italic;">Todos os horários (Geral)</span>`;
+
                     const row = `
                         <tr data-id="${item.id_motivo}">
+                            <td data-label="Ciclo / Horário">${cycleLabel}</td>
                             <td data-label="Motivo de Oração" class="truncate-cell" title="${escapeAttr(item.mot_descricao)}">${item.mot_descricao}</td>
                             <td data-label="Ações">
                                 ${actionsHtml}
@@ -332,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error loading prayer requests for admin:', error);
-            tableBody.innerHTML = `<tr><td colspan="2">Falha ao carregar motivos de oração.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="3">Falha ao carregar motivos de oração.</td></tr>`;
         }
     }
 
@@ -401,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     // No clock selected, clear tables
                     prayerClockTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os voluntários.</td></tr>';
-                    motivosTableBody.innerHTML = '<tr><td colspan="2">Selecione um relógio para ver os motivos de oração.</td></tr>';
+                    motivosTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os motivos de oração.</td></tr>';
                 }
 
                 // Add/remove disabled class for visual styling
@@ -708,6 +806,111 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- SOLICITAÇÕES DE VOLUNTÁRIOS DO RELÓGIO DE ORAÇÃO ---
+
+    async function loadAdminSolicitacoes() {
+        const tableBody = document.querySelector('#solicitacoes-table tbody');
+        const badgeRequests = document.getElementById('badge-requests');
+        if (!tableBody) return;
+
+        try {
+            const response = await fetch('/api/admin/solicitacoes-oracao');
+            if (!response.ok) throw new Error('Falha ao buscar solicitações');
+            const solicitacoes = await response.json();
+
+            // Atualiza badge de contagem
+            if (badgeRequests) {
+                if (solicitacoes.length > 0) {
+                    badgeRequests.textContent = solicitacoes.length;
+                    badgeRequests.style.display = 'inline-block';
+                } else {
+                    badgeRequests.style.display = 'none';
+                }
+            }
+
+            tableBody.innerHTML = '';
+            if (solicitacoes.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5">Nenhuma solicitação de voluntário pendente.</td></tr>';
+                return;
+            }
+
+            const formatDate = (dateString) => new Date(dateString).toLocaleString('pt-BR');
+
+            solicitacoes.forEach(item => {
+                const parts = (item.sol_horario_escolhido || '').split(':');
+                const h = parseInt(parts[0], 10) || 0;
+                const m = parseInt(parts[1], 10) || 0;
+                const mEnd = (m + 15) % 60;
+                const hEnd = (m + 15 === 60) ? (h + 1) % 24 : h;
+                const horarioLabel = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} - ${String(hEnd).padStart(2, '0')}:${String(mEnd).padStart(2, '0')}`;
+
+                const row = `
+                    <tr data-id="${item.id_solicitacao}">
+                        <td data-label="Voluntário"><strong>${escapeAttr(item.sol_nome_completo)}</strong></td>
+                        <td data-label="Horário Desejado"><span class="badge" style="background:#eaf2f8; color:#2980b9; font-weight:600; padding:4px 8px; border-radius:4px;">${horarioLabel}</span></td>
+                        <td data-label="Data / Hora">${formatDate(item.sol_data_criacao)}</td>
+                        <td data-label="Relógio">${escapeAttr(item.rel_titulo || 'Relógio')}</td>
+                        <td data-label="Ações">
+                            <button class="btn-approve-solicitacao" data-id="${item.id_solicitacao}" style="background-color: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px; font-weight: 500;">✓ Aceitar</button>
+                            <button class="btn-refuse-solicitacao" data-id="${item.id_solicitacao}" style="background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 500;">✕ Recusar</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        } catch (error) {
+            console.error('Erro ao carregar solicitações de voluntários:', error);
+            tableBody.innerHTML = '<tr><td colspan="5">Erro ao carregar solicitações.</td></tr>';
+        }
+    }
+
+    async function loadAdminSolicitacoesHistorico() {
+        const tableBody = document.querySelector('#solicitacoes-historico-table tbody');
+        if (!tableBody) return;
+
+        try {
+            const response = await fetch('/api/admin/solicitacoes-oracao/historico');
+            if (!response.ok) throw new Error('Falha ao buscar histórico de solicitações');
+            const historico = await response.json();
+
+            tableBody.innerHTML = '';
+            if (historico.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5">Nenhuma solicitação no histórico.</td></tr>';
+                return;
+            }
+
+            const formatDate = (dateString) => new Date(dateString).toLocaleString('pt-BR');
+
+            historico.forEach(item => {
+                const parts = (item.sol_horario_escolhido || '').split(':');
+                const h = parseInt(parts[0], 10) || 0;
+                const m = parseInt(parts[1], 10) || 0;
+                const mEnd = (m + 15) % 60;
+                const hEnd = (m + 15 === 60) ? (h + 1) % 24 : h;
+                const horarioLabel = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} - ${String(hEnd).padStart(2, '0')}:${String(mEnd).padStart(2, '0')}`;
+
+                const statusText = item.sol_status === 'aprovado' ? 'Aceito' : 'Recusado';
+                const statusStyle = item.sol_status === 'aprovado' 
+                    ? 'background-color: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-weight: 600;' 
+                    : 'background-color: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: 600;';
+
+                const row = `
+                    <tr data-id="${item.id_solicitacao}">
+                        <td data-label="Voluntário">${escapeAttr(item.sol_nome_completo)}</td>
+                        <td data-label="Horário">${horarioLabel}</td>
+                        <td data-label="Data / Hora">${formatDate(item.sol_data_criacao)}</td>
+                        <td data-label="Relógio">${escapeAttr(item.rel_titulo || 'Relógio')}</td>
+                        <td data-label="Status"><span style="${statusStyle}">${statusText}</span></td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        } catch (error) {
+            console.error('Erro ao carregar histórico de solicitações:', error);
+            tableBody.innerHTML = '<tr><td colspan="5">Erro ao carregar histórico de solicitações.</td></tr>';
+        }
+    }
+
     async function loadGeneralSettings() {
         const settingsSection = document.getElementById('general-section');
         if (!settingsSection) return;
@@ -969,6 +1172,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        // ACEITAR SOLICITACAO DE VOLUNTARIO DO RELOGIO
+        if (target.classList.contains('btn-approve-solicitacao')) {
+            const id = target.dataset.id;
+            if (!id) return;
+            if (confirm('Aceitar este voluntário? Ele será vinculado ao relógio de oração no horário escolhido e aparecerá publicamente.')) {
+                try {
+                    const response = await fetch(`/api/admin/solicitacoes-oracao/${id}/aprovar`, { method: 'POST' });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Falha ao aceitar solicitação');
+                    
+                    alert(result.message || 'Solicitação aceita com sucesso!');
+                    loadAdminSolicitacoes();
+                    loadAdminSolicitacoesHistorico();
+                    loadAdminRelogios(); // Atualiza voluntários na seção do relógio
+                } catch (error) {
+                    alert(`Erro ao aceitar solicitação: ${error.message}`);
+                }
+            }
+        }
+
+        // RECUSAR SOLICITACAO DE VOLUNTARIO DO RELOGIO
+        if (target.classList.contains('btn-refuse-solicitacao')) {
+            const id = target.dataset.id;
+            if (!id) return;
+            if (confirm('Deseja recusar esta solicitação de voluntário?')) {
+                try {
+                    const response = await fetch(`/api/admin/solicitacoes-oracao/${id}/recusar`, { method: 'POST' });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Falha ao recusar solicitação');
+                    
+                    loadAdminSolicitacoes();
+                    loadAdminSolicitacoesHistorico();
+                } catch (error) {
+                    alert(`Erro ao recusar solicitação: ${error.message}`);
+                }
+            }
+        }
         // Salvar Configurações Gerais
         if (target.id === 'save-general-settings') {
             handleGeneralSettingsSave();
@@ -1155,15 +1396,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                let hourOptions = '';
-                for (let i = 0; i < 24; i++) {
-                    hourOptions += `<option value="${i}">${String(i).padStart(2, '0')}:00</option>`;
-                }
+                const hourOptions = generate15MinOptions('');
                 const formHtml = `
                     <input type="hidden" name="id_voluntario" value="">
                     <input type="hidden" name="id_relogio" value="${relogioId}">
                     <div class="form-group"><label for="vol_nome_completo">Nome do Voluntário</label><input type="text" id="vol_nome_completo" name="vol_nome_completo" required></div>
-                    <div class="form-group"><label for="vol_horario_escolhido">Horário</label><select id="vol_horario_escolhido" name="vol_horario_escolhido" required>${hourOptions}</select></div>
+                    <div class="form-group"><label for="vol_horario_escolhido">Horário (Ciclo de 15 min)</label><select id="vol_horario_escolhido" name="vol_horario_escolhido" required>${hourOptions}</select></div>
                     <div style="text-align: center; margin-top: 25px;">
                         <button type="submit" class="btn btn-dark">Salvar Voluntário</button>
                     </div>
@@ -1176,15 +1414,55 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Por favor, selecione um relógio primeiro.');
                     return;
                 }
+
+                // Busca os motivos existentes deste relógio para identificar ciclos já ocupados
+                let existingMotivos = [];
+                try {
+                    const res = await fetch(`/api/motivos-oracao?relogioId=${relogioId}`);
+                    if (res.ok) {
+                        existingMotivos = await res.json();
+                    }
+                } catch (err) {
+                    console.error('Erro ao buscar motivos existentes:', err);
+                }
+
+                const occupiedTimes = existingMotivos.map(m => m.mot_horario).filter(Boolean);
+                const randomSlot = pickRandomAvailable15MinCycle(occupiedTimes);
+
+                if (!randomSlot && occupiedTimes.length >= 96) {
+                    alert('Todos os 96 ciclos de 15 minutos já possuem motivos de oração cadastrados neste relógio.');
+                    return;
+                }
+
+                const cicloOptions = generate15MinOptions(randomSlot, true, occupiedTimes);
                 const formHtml = `
                     <input type="hidden" name="id_motivo" value="">
                     <input type="hidden" name="id_relogio" value="${relogioId}">
-                    <div class="form-group"><label for="mot_descricao">Motivo de Oração</label><textarea id="mot_descricao" name="mot_descricao" rows="5" required></textarea></div>
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label for="mot_horario" style="margin-bottom: 0;">Ciclo de Horário (15 min)</label>
+                            <button type="button" id="btn-sortear-ciclo" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.8rem; cursor: pointer;" title="Sortear outro horário disponível">🎲 Sortear outro</button>
+                        </div>
+                        <select id="mot_horario" name="mot_horario">${cicloOptions}</select>
+                        <small style="color: #666; font-size: 0.8rem; display: block; margin-top: 4px;">Horário sugerido aleatoriamente entre os disponíveis. Você pode alterá-lo se desejar.</small>
+                    </div>
+                    <div class="form-group"><label for="mot_descricao">Motivo de Oração</label><textarea id="mot_descricao" name="mot_descricao" rows="5" required placeholder="Digite o motivo de oração para este ciclo..."></textarea></div>
                     <div style="text-align: center; margin-top: 25px;">
                         <button type="submit" class="btn btn-dark">Salvar Motivo</button>
                     </div>
                 `;
                 openFormModal('Adicionar Motivo de Oração', formHtml, handleMotivoOracaoSubmit);
+
+                const btnSortear = document.getElementById('btn-sortear-ciclo');
+                const selectEl = document.getElementById('mot_horario');
+                if (btnSortear && selectEl) {
+                    btnSortear.addEventListener('click', () => {
+                        const nextSlot = pickRandomAvailable15MinCycle(occupiedTimes);
+                        if (nextSlot) {
+                            selectEl.value = nextSlot;
+                        }
+                    });
+                }
             }
             if (section === 'postits') {
                 const quadroId = document.getElementById('quadro-select').value;
@@ -1294,18 +1572,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const res = await fetch(`/api/voluntarios/${id}`);
                     if (!res.ok) throw new Error('Volunteer not found');
-                    const item = await res.json(); // vol_horario_escolhido, vol_nome_completo
-                    const currentHour = parseInt(item.vol_horario_escolhido.split(':')[0], 10);
-
-                    let hourOptions = '';
-                    for (let i = 0; i < 24; i++) {
-                        hourOptions += `<option value="${i}" ${i === currentHour ? 'selected' : ''}>${String(i).padStart(2, '0')}:00</option>`;
-                    }
+                    const item = await res.json();
+                    const hourOptions = generate15MinOptions(item.vol_horario_escolhido);
 
                     const formHtml = `
                         <input type="hidden" name="id_voluntario" value="${item.id_voluntario}"> 
                         <div class="form-group"><label for="vol_nome_completo">Nome do Voluntário</label><input type="text" id="vol_nome_completo" name="vol_nome_completo" value="${item.vol_nome_completo}" required></div>
-                        <div class="form-group"><label for="vol_horario_escolhido">Horário</label><select id="vol_horario_escolhido" name="vol_horario_escolhido" required>${hourOptions}</select></div>
+                        <div class="form-group"><label for="vol_horario_escolhido">Horário (Ciclo de 15 min)</label><select id="vol_horario_escolhido" name="vol_horario_escolhido" required>${hourOptions}</select></div>
                         <div style="text-align: center; margin-top: 25px;">
                             <button type="submit" class="btn btn-dark">Salvar Alterações</button>
                         </div>
@@ -1321,9 +1594,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     const res = await fetch(`/api/motivos-oracao/${id}`);
                     if (!res.ok) throw new Error('Prayer request not found');
                     const item = await res.json();
+
+                    // Busca motivos existentes para desabilitar horários ocupados por OUTROS motivos
+                    let occupiedTimes = [];
+                    try {
+                        const allRes = await fetch(`/api/motivos-oracao?relogioId=${item.id_relogio}`);
+                        if (allRes.ok) {
+                            const allMotivos = await allRes.json();
+                            occupiedTimes = allMotivos
+                                .filter(m => m.id_motivo !== item.id_motivo)
+                                .map(m => m.mot_horario)
+                                .filter(Boolean);
+                        }
+                    } catch (err) {
+                        console.error('Erro ao buscar motivos existentes:', err);
+                    }
+
+                    const cicloOptions = generate15MinOptions(item.mot_horario, true, occupiedTimes);
         
                     const formHtml = `
                         <input type="hidden" name="id_motivo" value="${item.id_motivo}"> 
+                        <input type="hidden" name="id_relogio" value="${item.id_relogio}"> 
+                        <div class="form-group"><label for="mot_horario">Ciclo de Horário (15 min)</label><select id="mot_horario" name="mot_horario">${cicloOptions}</select></div>
                         <div class="form-group"><label for="mot_descricao">Motivo de Oração</label><textarea id="mot_descricao" name="mot_descricao" rows="5" required>${item.mot_descricao}</textarea></div>
                         <div style="text-align: center; margin-top: 25px;">
                             <button type="submit" class="btn btn-dark">Salvar Alterações</button>

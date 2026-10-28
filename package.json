@@ -1,4 +1,10 @@
 {
+  "name": "ministerio-antioquia",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "node --watch backend/src/server.js"
+  },
   "dependencies": {
     "@editorjs/editorjs": "^2.31.3",
     "bcrypt": "^6.0.0",

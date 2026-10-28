@@ -274,135 +274,568 @@ async function setupPrayerClock() {
     const clockTime = document.getElementById('clock');
     const clockHand = document.getElementById('clock-hand');
     const nameListContainer = document.getElementById('prayer-name-list');
-    const motivesListContainer = document.querySelector('.prayer-requests-section ul');
+    const motivesListContainer = document.getElementById('prayer-motivos-list') || document.querySelector('.prayer-requests-section ul');
+    const motivosSubtitle = document.getElementById('motivos-subtitle');
+    const btnResetMotivos = document.getElementById('btn-reset-motivos-view');
+
+    // Helper para normalizar horários (HH:MM:00)
+    const normalizeTime = (input) => {
+        if (!input || input === 'todos' || input === 'geral') return null;
+        const str = String(input).trim();
+        if (!str) return null;
+        const parts = str.split(':');
+        const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+        const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+        return `${h}:${m}:00`;
+    };
+
+    // Gera os 96 ciclos de 15 minutos do dia (00:00 - 00:15 até 23:45 - 00:00)
+    const slots96 = [];
+    for (let i = 0; i < 96; i++) {
+        const hour = Math.floor(i / 4);
+        const minStart = (i % 4) * 15;
+        const minEnd = (minStart + 15) % 60;
+        const hourEnd = (minStart + 15 === 60) ? (hour + 1) % 24 : hour;
+
+        const startHH = String(hour).padStart(2, '0');
+        const startMM = String(minStart).padStart(2, '0');
+        const endHH = String(hourEnd).padStart(2, '0');
+        const endMM = String(minEnd).padStart(2, '0');
+
+        slots96.push({
+            index: i,
+            hour: hour,
+            minute: minStart,
+            timeKey: `${startHH}:${startMM}:00`,
+            shortTime: `${startHH}:${startMM}`,
+            intervalLabel: `${startHH}:${startMM} - ${endHH}:${endMM}`,
+            name: "Disponível",
+            isAvailable: true,
+            isPending: false,
+            motives: []
+        });
+    }
+
+    let generalMotivos = [];
+    let selectedSlotIndex = null;
+    let currentActiveName = "Disponível";
+    let lastUpdated15MinIndex = -1;
 
     // --- Busca dados da API ---
     try {
         const response = await fetch('/api/relogio');
         if (response.ok) {
             const data = await response.json();
-            
-            // 1. Processar Voluntários
-            // O banco retorna horario_escolhido como "HH:MM:SS". Precisamos extrair a hora.
-            prayerSchedule = data.voluntarios.map(vol => { // vol_horario_escolhido, vol_nome_completo
-                const hour = parseInt(vol.vol_horario_escolhido.split(':')[0], 10);
-                return { hour: hour, name: vol.vol_nome_completo };
-            });
 
-            // Preencher horários vazios (caso o banco não tenha as 24h preenchidas)
-            for (let i = 0; i < 24; i++) { // vol_horario_escolhido
-                if (!prayerSchedule.find(p => p.hour === i)) {
-                    prayerSchedule.push({ hour: i, name: "Disponível" });
+            // Caso não haja relógio ativo no momento (expirado após 2h da finalização)
+            if (!data || !data.relogio) {
+                const btnVoluntariar = document.getElementById('btn-open-voluntariar');
+                if (btnVoluntariar) btnVoluntariar.style.display = 'none';
+
+                const motivosTitle = document.getElementById('motivos-title');
+                if (motivosTitle) motivosTitle.textContent = 'Relógio de Oração';
+                if (motivosSubtitle) motivosSubtitle.textContent = 'Nenhuma edição ativa no momento';
+
+                if (motivesListContainer) {
+                    motivesListContainer.innerHTML = '<li style="text-align: center; color: #666; padding: 25px; line-height: 1.6;">Não há um Relógio de Oração ativo no momento. As escalas e motivos ficam disponíveis até 2 horas após a conclusão de cada edição. Fique atento às nossas notícias para as próximas datas!</li>';
                 }
+                if (nameListContainer) {
+                    nameListContainer.innerHTML = '<li style="justify-content: center; color: #888; font-style: italic; padding: 30px;">Aguardando próximo relógio de oração...</li>';
+                }
+                if (centerDisplay) {
+                    centerDisplay.textContent = 'Sem relógio ativo';
+                }
+                return;
             }
-            // Ordenar por horário
-            prayerSchedule.sort((a, b) => a.hour - b.hour);
 
-            // 2. Processar Motivos de Oração
-            if (motivesListContainer && data.motivos) { // mot_descricao
-                motivesListContainer.innerHTML = data.motivos.map(m => `<li>${m.mot_descricao}</li>`).join('');
+            // Se o relógio já foi finalizado mas ainda está dentro da janela de 2h para consulta
+            if (data.relogio.esta_finalizado) {
+                const btnVoluntariar = document.getElementById('btn-open-voluntariar');
+                if (btnVoluntariar) btnVoluntariar.style.display = 'none';
+                if (motivosSubtitle) {
+                    motivosSubtitle.innerHTML = `<strong>${data.relogio.rel_titulo}</strong> — <span style="color:#d35400; font-weight:600;">Concluído (disponível para consulta até as 02h)</span>`;
+                }
+            } else if (motivosSubtitle && data.relogio.rel_titulo) {
+                motivosSubtitle.textContent = `${data.relogio.rel_titulo} (Turno atual)`;
+            }
+
+            // 1. Mapear Voluntários para seus respectivos ciclos de 15 minutos
+            if (Array.isArray(data.voluntarios)) {
+                data.voluntarios.forEach(vol => {
+                    const normTime = normalizeTime(vol.vol_horario_escolhido);
+                    if (normTime) {
+                        const targetSlot = slots96.find(s => s.timeKey === normTime);
+                        if (targetSlot) {
+                            targetSlot.name = vol.vol_nome_completo;
+                            targetSlot.isAvailable = false;
+                            targetSlot.isPending = false;
+                        }
+                    }
+                });
+            }
+
+            // 2. Mapear Solicitações Pendentes para "Em análise"
+            if (Array.isArray(data.pendentes)) {
+                data.pendentes.forEach(item => {
+                    const normTime = normalizeTime(item.sol_horario_escolhido);
+                    if (normTime) {
+                        const targetSlot = slots96.find(s => s.timeKey === normTime);
+                        // Apenas define como "Em análise" se ainda não tiver voluntário confirmado
+                        if (targetSlot && targetSlot.isAvailable) {
+                            targetSlot.name = "Em análise";
+                            targetSlot.isAvailable = false;
+                            targetSlot.isPending = true;
+                        }
+                    }
+                });
+            }
+
+            // 2. Mapear Motivos de Oração (por ciclo ou gerais)
+            if (Array.isArray(data.motivos)) {
+                data.motivos.forEach(m => {
+                    const normTime = normalizeTime(m.mot_horario);
+                    if (normTime) {
+                        const targetSlot = slots96.find(s => s.timeKey === normTime);
+                        if (targetSlot) {
+                            targetSlot.motives.push(m);
+                        } else {
+                            generalMotivos.push(m);
+                        }
+                    } else {
+                        generalMotivos.push(m);
+                    }
+                });
             }
         }
     } catch (error) {
-        console.error("Erro ao carregar dados do relógio:", error);
-        // Fallback silencioso ou mensagem de erro na UI se desejar
+        console.error("Erro ao carregar dados do relógio de oração:", error);
     }
 
-    const radius = clockFace.offsetWidth / 2 * 0.8; // 80% do raio para dar espaço
+    // --- 1. RENDERIZA O RELÓGIO VISUAL (MANTÉM 24 HORAS COMO HOJE) ---
+    function renderClockFaceSlots() {
+        if (!clockFace) return;
+        clockFace.querySelectorAll('.clock-slot').forEach(el => el.remove());
 
-    let currentActiveName = "Carregando...";
-    let lastUpdatedHour = -1;
+        const radius = (clockFace.offsetWidth || 500) / 2 * 0.8;
 
-    // Função para atualizar o texto central para o turno atual
+        for (let h = 0; h < 24; h++) {
+            const angle = (h / 24) * 2 * Math.PI - (Math.PI / 2);
+            const x = radius * Math.cos(angle);
+            const y = radius * Math.sin(angle);
+
+            const slotEl = document.createElement('div');
+            slotEl.className = 'clock-slot';
+            slotEl.textContent = String(h).padStart(2, '0');
+            slotEl.dataset.hour = h;
+
+            const transformValue = `translate(${x}px, ${y}px)`;
+            slotEl.style.transform = transformValue;
+            slotEl.style.setProperty('--transform-base', transformValue);
+
+            // Hover no número da hora (00-23): mostra resumo dos voluntários daquela hora
+            slotEl.addEventListener('mouseenter', () => {
+                if (!centerDisplay) return;
+                const hourSlots = slots96.slice(h * 4, h * 4 + 4);
+                const activeVolunteers = hourSlots.filter(s => !s.isAvailable);
+
+                if (activeVolunteers.length === 0) {
+                    centerDisplay.textContent = `${String(h).padStart(2, '0')}h: Disponível`;
+                } else {
+                    const uniqueNames = [...new Set(activeVolunteers.map(v => v.name))];
+                    if (uniqueNames.length === 1 && activeVolunteers.length === 4) {
+                        centerDisplay.textContent = `${String(h).padStart(2, '0')}h: ${uniqueNames[0]}`;
+                    } else {
+                        centerDisplay.textContent = `${String(h).padStart(2, '0')}h: ${activeVolunteers.map(v => `${v.shortTime} ${v.name}`).join(' | ')}`;
+                    }
+                }
+            });
+
+            clockFace.appendChild(slotEl);
+        }
+    }
+
+    renderClockFaceSlots();
+
     const updateDisplayToCurrent = () => {
         if (!centerDisplay) return;
         centerDisplay.textContent = `Turno de: ${currentActiveName}`;
     };
 
-    // Renderiza os slots do relógio
-    prayerSchedule.forEach(slot => {
-        const angle = (slot.hour / 24) * 2 * Math.PI - (Math.PI / 2); // Ângulo em radianos, -90deg para começar no topo
-        const x = radius * Math.cos(angle);
-        const y = radius * Math.sin(angle);
+    clockFace.addEventListener('mouseleave', updateDisplayToCurrent);
 
-        const slotEl = document.createElement('div');
-        slotEl.className = 'clock-slot';
-        slotEl.textContent = String(slot.hour).padStart(2, '0');
-        slotEl.dataset.hour = slot.hour;
-        slotEl.dataset.name = slot.name;
-
-        const transformValue = `translate(${x}px, ${y}px)`;
-        slotEl.style.transform = transformValue;
-        slotEl.style.setProperty('--transform-base', transformValue);
-
-        // Interatividade no hover
-        slotEl.addEventListener('mouseenter', () => {
-            centerDisplay.textContent = `Turno de: ${slot.name}`;
-        });
-
-        clockFace.appendChild(slotEl);
+    let clockResizeTimer = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(clockResizeTimer);
+        clockResizeTimer = setTimeout(() => {
+            renderClockFaceSlots();
+            const now = new Date();
+            const currentHour = now.getHours();
+            clockFace.querySelectorAll('.clock-slot').forEach(slotEl => {
+                const slotHour = parseInt(slotEl.dataset.hour, 10);
+                slotEl.classList.remove('active', 'past');
+                if (slotHour < currentHour) slotEl.classList.add('past');
+                else if (slotHour === currentHour) slotEl.classList.add('active');
+            });
+        }, 150);
     });
 
-    // Renderiza a lista de nomes à esquerda
+    // --- 2. RENDERIZA A ESCALA DE ORAÇÃO (TABELA/LISTA COM OS 96 INTERVALOS DE 15 MINUTOS) ---
     if (nameListContainer) {
-        prayerSchedule.forEach(slot => {
+        nameListContainer.innerHTML = '';
+        slots96.forEach(slot => {
             const li = document.createElement('li');
-            li.dataset.hour = slot.hour;
-            li.innerHTML = `
-                <span class="name">${slot.name}</span>
-                <span class="hour">${String(slot.hour).padStart(2, '0')}:00</span>
-            `;
+            li.dataset.index = slot.index;
+            li.dataset.time = slot.timeKey;
+
+            const hourSpan = document.createElement('span');
+            hourSpan.className = 'hour';
+            hourSpan.textContent = slot.intervalLabel;
+
+            const nameSpan = document.createElement('span');
+            let nameClass = 'name';
+            if (slot.isPending) {
+                nameClass += ' is-pending';
+            } else if (slot.isAvailable) {
+                nameClass += ' is-available';
+            }
+            nameSpan.className = nameClass;
+            nameSpan.textContent = slot.name;
+
+            li.appendChild(hourSpan);
+            li.appendChild(nameSpan);
+
+            if (slot.motives.length > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'badge-motive-pill';
+                badge.title = `${slot.motives.length} motivo(s) específico(s) para este ciclo`;
+                badge.textContent = `🙏 ${slot.motives.length}`;
+                li.appendChild(badge);
+            }
+
+            // Ao clicar em um horário na escala, exibe os motivos específicos deste ciclo
+            li.addEventListener('click', () => {
+                selectSlotForMotives(slot.index);
+            });
+
             nameListContainer.appendChild(li);
         });
     }
 
-    // Restaura o texto do turno atual quando o mouse sai do relógio
-    clockFace.addEventListener('mouseleave', updateDisplayToCurrent);
+    // --- 3. EXIBIÇÃO DINÂMICA DOS MOTIVOS DE ORAÇÃO ---
+    function renderMotivos(slotIndex, isUserSelection = false) {
+        if (!motivesListContainer) return;
 
-    // Função principal que atualiza o estado do relógio a cada segundo
+        const slot = slots96[slotIndex];
+        if (!slot) return;
+
+        if (motivosSubtitle) {
+            if (isUserSelection) {
+                motivosSubtitle.textContent = `Turno selecionado: ${slot.intervalLabel} (${slot.name})`;
+            } else {
+                motivosSubtitle.textContent = `Turno atual: ${slot.intervalLabel} (${slot.name})`;
+            }
+        }
+
+        if (btnResetMotivos) {
+            btnResetMotivos.style.display = isUserSelection ? 'inline-block' : 'none';
+        }
+
+        motivesListContainer.innerHTML = '';
+
+        const hasCycleMotives = slot.motives && slot.motives.length > 0;
+        const hasGeneralMotivos = generalMotivos && generalMotivos.length > 0;
+
+        if (!hasCycleMotives && !hasGeneralMotivos) {
+            const emptyLi = document.createElement('li');
+            emptyLi.textContent = 'Nenhum motivo de oração cadastrado no momento.';
+            motivesListContainer.appendChild(emptyLi);
+            return;
+        }
+
+        // 1. Motivos específicos do ciclo
+        if (hasCycleMotives) {
+            slot.motives.forEach(m => {
+                const li = document.createElement('li');
+                const badge = document.createElement('span');
+                badge.className = 'motive-badge';
+                badge.textContent = slot.intervalLabel;
+                li.appendChild(badge);
+                li.appendChild(document.createTextNode(' ' + m.mot_descricao));
+                motivesListContainer.appendChild(li);
+            });
+        }
+
+        // 2. Motivos gerais
+        if (hasGeneralMotivos) {
+            generalMotivos.forEach(m => {
+                const li = document.createElement('li');
+                const badge = document.createElement('span');
+                badge.className = 'motive-badge motive-general-badge';
+                badge.textContent = 'Geral';
+                li.appendChild(badge);
+                li.appendChild(document.createTextNode(' ' + m.mot_descricao));
+                motivesListContainer.appendChild(li);
+            });
+        }
+    }
+
+    function selectSlotForMotives(index) {
+        selectedSlotIndex = index;
+        if (nameListContainer) {
+            nameListContainer.querySelectorAll('li').forEach(el => el.classList.remove('is-selected'));
+            const targetLi = nameListContainer.querySelector(`li[data-index="${index}"]`);
+            if (targetLi) {
+                targetLi.classList.add('is-selected');
+                targetLi.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+        renderMotivos(index, true);
+    }
+
+    if (btnResetMotivos) {
+        btnResetMotivos.addEventListener('click', () => {
+            selectedSlotIndex = null;
+            if (nameListContainer) {
+                nameListContainer.querySelectorAll('li').forEach(el => el.classList.remove('is-selected'));
+            }
+            const now = new Date();
+            const currentSlotIndex = now.getHours() * 4 + Math.floor(now.getMinutes() / 15);
+            renderMotivos(currentSlotIndex, false);
+            const activeLi = nameListContainer ? nameListContainer.querySelector(`li[data-index="${currentSlotIndex}"]`) : null;
+            if (activeLi) {
+                activeLi.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        });
+    }
+
+    // --- 4. ATUALIZAÇÃO DO RELÓGIO A CADA SEGUNDO ---
     function updateClockState() {
         const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
         const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const hours = String(currentHour).padStart(2, '0');
+        const minutes = String(currentMinute).padStart(2, '0');
 
         if (clockTime) clockTime.textContent = `${hours}:${minutes}`;
 
-        // Atualiza a rotação do ponteiro
-        const rotationDegrees = (currentHour * 15) + (minutes * 0.25); // 15deg/hr, 0.25deg/min
+        // Ponteiro gira 360 graus em 24 horas (15 graus/hora + 0.25 graus/minuto)
+        const rotationDegrees = (currentHour * 15) + (currentMinute * 0.25);
         if (clockHand) clockHand.style.transform = `rotate(${rotationDegrees}deg)`;
 
-        // Atualiza o nome do responsável pelo turno atual (para o efeito de hover-out)
-        const activeSlotData = prayerSchedule.find(s => s.hour === currentHour);
-        currentActiveName = activeSlotData ? activeSlotData.name : "Sem voluntário";
+        // Índice do ciclo atual de 15 minutos (0 a 95)
+        const currentSlotIndex = currentHour * 4 + Math.floor(currentMinute / 15);
+        const currentSlot = slots96[currentSlotIndex];
+        currentActiveName = currentSlot ? currentSlot.name : "Disponível";
 
-        // Para otimização, só atualiza as classes e scroll quando a hora muda
-        if (currentHour !== lastUpdatedHour) {
+        // Se o ciclo de 15 minutos mudou (ou na primeira execução)
+        if (currentSlotIndex !== lastUpdated15MinIndex) {
             updateDisplayToCurrent();
 
+            // Atualiza horas ativas/passadas no relógio circular de 24h
             clockFace.querySelectorAll('.clock-slot').forEach(slotEl => {
-                const slotHour = parseInt(slotEl.dataset.hour);
+                const slotHour = parseInt(slotEl.dataset.hour, 10);
                 slotEl.classList.remove('active', 'past');
                 if (slotHour < currentHour) slotEl.classList.add('past');
                 else if (slotHour === currentHour) slotEl.classList.add('active');
             });
 
+            // Atualiza o item ativo na escala de 15 minutos
             if (nameListContainer) {
-                const currentActiveLi = nameListContainer.querySelector('li.active');
-                if (currentActiveLi) currentActiveLi.classList.remove('active');
-                const newActiveLi = nameListContainer.querySelector(`li[data-hour="${currentHour}"]`);
+                const prevActive = nameListContainer.querySelector('li.active');
+                if (prevActive) prevActive.classList.remove('active');
+
+                const newActiveLi = nameListContainer.querySelector(`li[data-index="${currentSlotIndex}"]`);
                 if (newActiveLi) {
                     newActiveLi.classList.add('active');
+                    // Rola suavemente até o item atual na primeira carga
+                    if (lastUpdated15MinIndex === -1 && selectedSlotIndex === null) {
+                        newActiveLi.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    }
                 }
             }
 
-            lastUpdatedHour = currentHour;
+            // Se o usuário não clicou para inspecionar um horário específico, atualiza os motivos para o turno atual
+            if (selectedSlotIndex === null) {
+                renderMotivos(currentSlotIndex, false);
+            }
+
+            lastUpdated15MinIndex = currentSlotIndex;
         }
     }
 
-    updateClockState(); // Executa uma vez para definir o estado inicial
-    updateDisplayToCurrent(); // Define o texto inicial
-    setInterval(updateClockState, 1000); // Continua atualizando a cada segundo
+    updateClockState();
+    updateDisplayToCurrent();
+    setInterval(updateClockState, 1000);
+
+    // --- 5. MODAL SE VOLUNTARIAR ---
+    const btnOpenVoluntariar = document.getElementById('btn-open-voluntariar');
+    const modalVoluntariar = document.getElementById('modal-voluntariar');
+    const btnCloseVoluntariar = document.getElementById('btn-close-voluntariar');
+    const btnCancelVoluntariar = document.getElementById('btn-cancel-voluntariar');
+    const formVoluntariar = document.getElementById('form-voluntariar');
+    const inputNomeCompleto = document.getElementById('vol-nome-completo');
+    const selectHorario = document.getElementById('vol-horario-select');
+    const statusVoluntariar = document.getElementById('vol-form-status');
+    const errorNome = document.getElementById('vol-nome-error');
+    const btnSubmitVoluntariar = document.getElementById('btn-submit-voluntariar');
+
+    if (btnOpenVoluntariar && modalVoluntariar) {
+        // Preenche o select com os 96 ciclos de 15 minutos
+        function populateHorariosSelect() {
+            if (!selectHorario) return;
+            selectHorario.innerHTML = '<option value="">-- Selecione o ciclo de 15 minutos --</option>';
+            slots96.forEach(slot => {
+                const opt = document.createElement('option');
+                opt.value = slot.shortTime;
+                if (slot.isPending) {
+                    opt.textContent = `${slot.intervalLabel} (Em análise - Indisponível)`;
+                    opt.disabled = true;
+                    opt.style.color = '#b9770e';
+                } else if (!slot.isAvailable) {
+                    opt.textContent = `${slot.intervalLabel} (Ocupado - Indisponível)`;
+                    opt.disabled = true;
+                    opt.style.color = '#999';
+                } else {
+                    opt.textContent = `${slot.intervalLabel} (Disponível)`;
+                }
+                selectHorario.appendChild(opt);
+            });
+        }
+
+        const openModal = () => {
+            populateHorariosSelect();
+            if (formVoluntariar) formVoluntariar.reset();
+            if (statusVoluntariar) {
+                statusVoluntariar.style.display = 'none';
+                statusVoluntariar.textContent = '';
+            }
+            if (errorNome) errorNome.style.display = 'none';
+            modalVoluntariar.classList.add('is-visible');
+            document.body.classList.add('modal-open');
+        };
+
+        const closeModal = () => {
+            modalVoluntariar.classList.remove('is-visible');
+            document.body.classList.remove('modal-open');
+        };
+
+        btnOpenVoluntariar.addEventListener('click', openModal);
+        if (btnCloseVoluntariar) btnCloseVoluntariar.addEventListener('click', closeModal);
+        if (btnCancelVoluntariar) btnCancelVoluntariar.addEventListener('click', closeModal);
+
+        // Fecha clicando no overlay
+        modalVoluntariar.addEventListener('click', (e) => {
+            if (e.target === modalVoluntariar) closeModal();
+        });
+
+        // Validação e Envio do Formulário
+        if (formVoluntariar) {
+            formVoluntariar.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const nomeCompleto = (inputNomeCompleto.value || '').trim();
+                const horarioEscolhido = selectHorario.value;
+
+                // Valida Nome e Sobrenome (mínimo de 2 palavras, cada uma com pelo menos 2 caracteres)
+                const parts = nomeCompleto.split(/\s+/).filter(p => p.length > 0);
+                if (parts.length < 2 || parts.some(p => p.length < 2)) {
+                    if (errorNome) errorNome.style.display = 'block';
+                    inputNomeCompleto.focus();
+                    return;
+                } else {
+                    if (errorNome) errorNome.style.display = 'none';
+                }
+
+                if (!horarioEscolhido) {
+                    alert('Por favor, selecione um horário para interceder.');
+                    selectHorario.focus();
+                    return;
+                }
+
+                // Valida se o horário escolhido não está ocupado ou em análise
+                const chosenSlot = slots96.find(s => s.shortTime === horarioEscolhido);
+                if (chosenSlot && (!chosenSlot.isAvailable || chosenSlot.isPending)) {
+                    if (statusVoluntariar) {
+                        statusVoluntariar.style.display = 'block';
+                        statusVoluntariar.style.backgroundColor = '#f8d7da';
+                        statusVoluntariar.style.color = '#721c24';
+                        statusVoluntariar.style.border = '1px solid #f5c6cb';
+                        statusVoluntariar.textContent = chosenSlot.isPending
+                            ? 'Este horário já possui uma solicitação em análise. Por favor, selecione outro horário.'
+                            : 'Este horário já está ocupado por outro voluntário. Por favor, selecione outro horário.';
+                    }
+                    return;
+                }
+
+                // Envio para o backend
+                try {
+                    btnSubmitVoluntariar.disabled = true;
+                    btnSubmitVoluntariar.textContent = 'Enviando...';
+                    if (statusVoluntariar) {
+                        statusVoluntariar.style.display = 'none';
+                    }
+
+                    const response = await fetch('/api/relogio/solicitacao', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            vol_nome_completo: nomeCompleto,
+                            vol_horario_escolhido: horarioEscolhido
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Erro ao enviar solicitação.');
+                    }
+
+                    if (statusVoluntariar) {
+                        statusVoluntariar.style.display = 'block';
+                        statusVoluntariar.style.backgroundColor = '#d4edda';
+                        statusVoluntariar.style.color = '#155724';
+                        statusVoluntariar.style.border = '1px solid #c3e6cb';
+                        statusVoluntariar.textContent = data.message || 'Solicitação enviada com sucesso!';
+                    }
+
+                    // Atualiza imediatamente o ciclo na tela para "Em análise"
+                    const targetSlot = slots96.find(s => s.shortTime === horarioEscolhido);
+                    if (targetSlot && targetSlot.isAvailable) {
+                        targetSlot.name = "Em análise";
+                        targetSlot.isAvailable = false;
+                        targetSlot.isPending = true;
+                        if (nameListContainer) {
+                            const li = nameListContainer.querySelector(`li[data-time="${targetSlot.timeKey}"]`);
+                            if (li) {
+                                const nameEl = li.querySelector('.name');
+                                if (nameEl) {
+                                    nameEl.className = 'name is-pending';
+                                    nameEl.textContent = 'Em análise';
+                                }
+                            }
+                        }
+                    }
+
+                    formVoluntariar.reset();
+
+                    setTimeout(() => {
+                        closeModal();
+                    }, 2200);
+
+                } catch (err) {
+                    if (statusVoluntariar) {
+                        statusVoluntariar.style.display = 'block';
+                        statusVoluntariar.style.backgroundColor = '#f8d7da';
+                        statusVoluntariar.style.color = '#721c24';
+                        statusVoluntariar.style.border = '1px solid #f5c6cb';
+                        statusVoluntariar.textContent = err.message;
+                    }
+                } finally {
+                    btnSubmitVoluntariar.disabled = false;
+                    btnSubmitVoluntariar.textContent = 'Enviar Solicitação';
+                }
+            });
+        }
+    }
 }
 
 function setupNewsModal() {

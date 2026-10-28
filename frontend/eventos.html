@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notícias - Movimento Antioquia</title>
-    <link rel="icon" href="imagens/logo.jpg" type="image/jpeg">
-    <link rel="stylesheet" href="style.css">
+    <title>Eventos - Movimento Antioquia</title>
+    <link rel="icon" href="imagens/logo.png" type="image/png">
+    <link rel="stylesheet" href="css/style.css">
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <!-- Theme color for browser UI -->
@@ -14,13 +14,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Antioquia">
-    <link rel="apple-touch-icon" href="imagens/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="imagens/logo_pwa.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Roboto:wght@300;400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
         <div class="logo-container">
-            <a href="index.html"><img src="imagens/logo.jpg" alt="Logo Movimento Antioquia" class="logo"></a>
+            <a href="index.html"><img src="imagens/logo.png" alt="Logo Movimento Antioquia" class="logo"></a>
         </div>
         <div class="brand-name">
             <h1>MOVIMENTO</h1>
@@ -29,8 +29,8 @@
         <nav>
             <a href="index.html">Home</a>
             <a href="missionarios.html">Missionários</a>
-            <a href="noticias.html" class="active">Notícias</a>
-            <a href="eventos.html">Eventos</a>
+            <a href="noticias.html">Notícias</a>
+            <a href="eventos.html" class="active">Eventos</a>
             <a href="relogio.html">Relógio de Oração</a>
             <a href="quadro-tito.html">Quadro Tito</a>
             <a href="index.html#contribua" class="nav-contribute-btn">Contribua</a>
@@ -48,40 +48,21 @@
     <main>
         <div class="container">
             <div class="about animate-on-scroll">
-                <h3>Notícias do Campo Missionário</h3>
-                <p>Acompanhe as últimas atualizações e testemunhos dos nossos missionários.</p>
+                <h3>Nossos Eventos</h3>
+                <p>Fique por dentro de toda a nossa programação e participe conosco.</p>
             </div>
 
-            <div class="news-grid">
-                <!-- As notícias serão carregadas aqui via JavaScript -->
+            <!-- Destaque para o próximo evento -->
+            <div id="next-event-highlight" class="animate-on-scroll">
+                <!-- O próximo evento será carregado aqui -->
+            </div>
+
+            <!-- Grade para os demais eventos -->
+            <div class="events-grid-full-page">
+                <!-- Os demais eventos serão carregados aqui -->
             </div>
         </div>
     </main>
-
-    <!-- Modal para Notícias -->
-    <div id="news-modal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="modal-close" aria-label="Fechar">&times;</button>
-            <div class="modal-body">
-                <img id="modal-img" src="" alt="Imagem da notícia">
-                <h3 id="modal-title"></h3>
-                <p id="modal-date"></p>
-                <div id="modal-full-story"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Manutenção -->
-    <div id="maintenance-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-body centered-content">
-                <img src="imagens/icone-manutencao.png" alt="Ícone de Manutenção" class="maintenance-icon">
-                <h3>Página em Manutenção</h3>
-                <p>Esta seção do site está temporariamente indisponível. Estamos trabalhando para melhorá-la. Por favor, volte mais tarde.</p>
-                <a href="index.html" class="btn btn-primary" style="margin-top: 20px;">Voltar para a Home</a>
-            </div>
-        </div>
-    </div>
 
     <footer>
         <div class="container">
@@ -95,6 +76,6 @@
     </footer>
 
     <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
-    <script src="script.js"></script>
+    <script src="js/script.js"></script>
 </body>
 </html>
