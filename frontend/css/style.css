@@ -80,9 +80,12 @@ header {
 }
 
 .brand-name {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    margin-left: 12px;
+    justify-content: center;
+    flex: 1;
+    margin: 0 16px;
+    text-align: center;
 }
 
 .brand-link {
@@ -193,7 +196,7 @@ nav {
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-left: auto;
+    margin-left: 0;
 }
 
 nav a {
@@ -520,7 +523,8 @@ h3 {
         top: 50%;
         transform: translate(-50%, -50%);
         text-align: center;
-        margin-left: 0;
+        margin: 0;
+        flex: none;
     }
 
     p.subtitle-script {
