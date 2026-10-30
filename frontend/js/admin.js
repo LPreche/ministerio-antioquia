@@ -1027,8 +1027,10 @@ document.addEventListener('DOMContentLoaded', () => {
             height: 350,
             menubar: false,
             language: 'pt_BR',
-            // A URL do idioma é removida, pois o TinyMCE Cloud (ativado pela API Key) carrega o idioma automaticamente.
+            language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n@24.7.29/langs6/pt_BR.js',
             content_style: 'body { font-family:Roboto,sans-serif; font-size:14px }',
+            promotion: false,
+            branding: false,
             setup: function(editor) {
                 editor.on('init', function() { this.focus(); });
             }
