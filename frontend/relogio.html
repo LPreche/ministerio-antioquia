@@ -57,6 +57,25 @@
             </div>
         </section>
 
+        <!-- Relógio de Oração Centralizado no Topo (abaixo do título e data) -->
+        <section class="prayer-clock-top-section animate-on-scroll" style="padding: 10px 0 25px 0;">
+            <div class="container prayer-clock-container" style="display: flex; justify-content: center; align-items: center;">
+                <div class="clock-face" id="clock-face">
+                    <div class="clock-hand" id="clock-hand"></div>
+                    <div class="clock-center" id="clock-center">
+                        <div id="clock-default-view">
+                            <div class="current-time" id="clock">00:00</div>
+                            <div id="current-prayer">Carregando...</div>
+                        </div>
+                        <div id="clock-slot-picker" style="display: none;">
+                            <!-- Conteúdo dinâmico com os 4 horários da hora clicada -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Escala e Motivos de Oração -->
         <div class="prayer-layout-grid container">
             <aside class="prayer-name-list-wrapper animate-on-scroll">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
@@ -68,42 +87,23 @@
                 <ul id="prayer-name-list"></ul>
             </aside>
 
-            <div class="prayer-main-column animate-on-scroll">
-                <section class="prayer-requests-section">
-                    <div class="prayer-requests-header" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 8px; margin-bottom: 16px;">
-                        <div style="text-align: center;">
-                            <h3 id="motivos-title" style="margin: 0; text-align: center;">Motivos de Oração</h3>
-                            <p id="motivos-subtitle" style="margin: 4px 0 0 0; color: var(--secondary-color); font-weight: 500; font-size: 0.95rem; text-align: center;">Turno atual</p>
-                        </div>
-                        <button id="btn-reset-motivos-view" class="btn btn-secondary" style="display: none; padding: 6px 16px; font-size: 0.85rem; margin-top: 4px;">Ver Turno Atual</button>
+            <section class="prayer-requests-section animate-on-scroll">
+                <div class="prayer-requests-header" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 8px; margin-bottom: 16px;">
+                    <div style="text-align: center;">
+                        <h3 id="motivos-title" style="margin: 0; text-align: center;">Motivos de Oração</h3>
+                        <p id="motivos-subtitle" style="margin: 4px 0 0 0; color: var(--secondary-color); font-weight: 500; font-size: 0.95rem; text-align: center;">Turno atual</p>
                     </div>
-                    <ul id="prayer-motivos-list">
-                        <li>Carregando motivos de oração...</li>
-                    </ul>
-                </section>
-
-                <div class="prayer-clock-wrapper">
-                    <div class="prayer-clock-container">
-                        <div class="clock-face" id="clock-face">
-                            <div class="clock-hand" id="clock-hand"></div>
-                            <div class="clock-center" id="clock-center">
-                                <div id="clock-default-view">
-                                    <div class="current-time" id="clock">00:00</div>
-                                    <div id="current-prayer">Carregando...</div>
-                                </div>
-                                <div id="clock-slot-picker" style="display: none;">
-                                    <!-- Conteúdo dinâmico com os 4 horários da hora clicada -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <button id="btn-reset-motivos-view" class="btn btn-secondary" style="display: none; padding: 6px 16px; font-size: 0.85rem; margin-top: 4px;">Ver Turno Atual</button>
                 </div>
-            </div>
+                <ul id="prayer-motivos-list">
+                    <li>Carregando motivos de oração...</li>
+                </ul>
+            </section>
         </div>
     </main>
 
     <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
-    <script src="js/script.js?v=7"></script>
+    <script src="js/script.js?v=8"></script>
 
     <!-- Modal Se Voluntariar -->
     <div id="modal-voluntariar" class="modal-overlay">

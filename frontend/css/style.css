@@ -903,30 +903,24 @@ footer a:hover {
     text-align: center;
 }
 
-.prayer-layout-grid {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 35px;
-    align-items: start;
-}
-
-.prayer-main-column {
+.prayer-clock-top-section {
     display: flex;
-    flex-direction: column;
-    gap: 25px;
-    width: 100%;
-}
-
-.prayer-main-column .prayer-requests-section {
-    width: 100%;
-}
-
-.prayer-main-column .prayer-clock-wrapper {
-    display: flex;
-    justify-content: center; /* Alinha o relógio ao centro da coluna */
+    justify-content: center;
     align-items: center;
     width: 100%;
-    margin-top: 5px;
+    padding: 10px 0 25px 0;
+}
+
+.prayer-layout-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 35px;
+    align-items: start;
+    margin-bottom: 50px;
+}
+
+.prayer-requests-section {
+    width: 100%;
 }
 
 .prayer-name-list-wrapper {
@@ -1276,17 +1270,22 @@ footer a:hover {
 }
 
 @media (max-width: 900px) {
+    .prayer-clock-top-section {
+        padding: 5px 0 20px 0;
+    }
     .prayer-layout-grid {
         display: flex;
         flex-direction: column;
         gap: 30px;
     }
-    /* No celular e telas menores, motivos e relógio ficam acima da escala */
-    .prayer-main-column {
+    /* No celular e telas menores, motivos ficam acima da escala */
+    .prayer-requests-section {
         order: 1;
+        width: 100%;
     }
     .prayer-name-list-wrapper {
         order: 2;
+        width: 100%;
         margin-bottom: 30px;
     }
     .clock-face {
