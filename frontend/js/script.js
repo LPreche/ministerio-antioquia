@@ -1023,12 +1023,32 @@ async function setupPrayerClock() {
             });
         }
 
+        const modalDesc = document.getElementById('vol-modal-description');
+        let lockedShortTime = null;
+
         const openModal = (targetShortTime = null) => {
             populateHorariosSelect();
             if (formVoluntariar) formVoluntariar.reset();
+
+            lockedShortTime = targetShortTime;
+
             if (targetShortTime && selectHorario) {
                 selectHorario.value = targetShortTime;
+                selectHorario.disabled = true;
+                selectHorario.style.backgroundColor = '#f1f5f9';
+                selectHorario.style.cursor = 'not-allowed';
+                if (modalDesc) {
+                    modalDesc.textContent = 'Preencha seu nome e sobrenome para confirmar sua intercessão neste horário.';
+                }
+            } else if (selectHorario) {
+                selectHorario.disabled = false;
+                selectHorario.style.backgroundColor = '#fff';
+                selectHorario.style.cursor = 'default';
+                if (modalDesc) {
+                    modalDesc.textContent = 'Preencha seu nome e selecione o horário em que deseja interceder.';
+                }
             }
+
             if (statusVoluntariar) {
                 statusVoluntariar.style.display = 'none';
                 statusVoluntariar.textContent = '';
@@ -1046,6 +1066,12 @@ async function setupPrayerClock() {
         const closeModal = () => {
             modalVoluntariar.classList.remove('is-visible');
             document.body.classList.remove('modal-open');
+            if (selectHorario) {
+                selectHorario.disabled = false;
+                selectHorario.style.backgroundColor = '#fff';
+                selectHorario.style.cursor = 'default';
+            }
+            lockedShortTime = null;
         };
 
         btnOpenVoluntariar.addEventListener('click', () => openModal());
@@ -1062,7 +1088,7 @@ async function setupPrayerClock() {
             formVoluntariar.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const nomeCompleto = (inputNomeCompleto.value || '').trim();
-                const horarioEscolhido = selectHorario.value;
+                const horarioEscolhido = lockedShortTime || selectHorario.value;
 
                 // Valida Nome e Sobrenome (mínimo de 2 palavras, cada uma com pelo menos 2 caracteres)
                 const parts = nomeCompleto.split(/\s+/).filter(p => p.length > 0);
