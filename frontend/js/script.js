@@ -270,6 +270,12 @@ async function setupPrayerClock() {
     const clockFace = document.getElementById('clock-face');
     if (!clockFace) return; // Só executa na página do relógio
 
+    const clockCenter = document.getElementById('clock-center');
+    const clockDefaultView = document.getElementById('clock-default-view');
+    const clockSlotPicker = document.getElementById('clock-slot-picker');
+    let selectedHourForPicker = null;
+    let openModalVoluntariarComHorario = null;
+
     const centerDisplay = document.getElementById('current-prayer');
     const clockTime = document.getElementById('clock');
     const clockHand = document.getElementById('clock-hand');
@@ -451,6 +457,101 @@ async function setupPrayerClock() {
         console.error("Erro ao carregar dados do relógio de oração:", error);
     }
 
+    // --- 1. SELETOR DE CICLOS DE 15 MIN NO CENTRO DO RELÓGIO ---
+    function closeHourPicker() {
+        selectedHourForPicker = null;
+        if (clockFace) {
+            clockFace.querySelectorAll('.clock-slot').forEach(el => el.classList.remove('is-selected-hour'));
+        }
+        if (clockCenter) {
+            clockCenter.classList.remove('is-picking');
+        }
+        if (clockSlotPicker) {
+            clockSlotPicker.style.display = 'none';
+            clockSlotPicker.innerHTML = '';
+        }
+        if (clockDefaultView) {
+            clockDefaultView.style.display = 'block';
+        }
+        updateDisplayToCurrent();
+    }
+
+    function renderHourPicker(hour) {
+        if (!clockSlotPicker || !clockCenter) return;
+
+        selectedHourForPicker = hour;
+        if (clockDefaultView) {
+            clockDefaultView.style.display = 'none';
+        }
+        clockCenter.classList.add('is-picking');
+        clockSlotPicker.style.display = 'block';
+
+        const hourFormatted = String(hour).padStart(2, '0');
+        const hourSlots = slots96.slice(hour * 4, hour * 4 + 4);
+
+        clockSlotPicker.innerHTML = `
+            <div class="clock-picker-container">
+                <div class="clock-picker-header">
+                    <span class="clock-picker-title">⏰ Ciclos das <strong>${hourFormatted}h</strong></span>
+                    <button type="button" class="clock-picker-close" id="btn-close-clock-picker" title="Fechar">&times;</button>
+                </div>
+                <div class="clock-picker-slots">
+                    ${hourSlots.map(slot => {
+                        let statusClass = 'is-available';
+                        let statusText = 'Disponível';
+                        let isClickable = true;
+
+                        if (slot.isPending) {
+                            statusClass = 'is-pending';
+                            statusText = 'Em análise';
+                            isClickable = false;
+                        } else if (!slot.isAvailable) {
+                            statusClass = 'is-occupied';
+                            const firstName = (slot.name || 'Ocupado').split(' ')[0];
+                            statusText = firstName;
+                            isClickable = false;
+                        }
+
+                        if (isClickable) {
+                            return `
+                                <button type="button" class="clock-slot-picker-btn ${statusClass}" data-short-time="${slot.shortTime}" title="Clique para se voluntariar das ${slot.intervalLabel}">
+                                    <span>${slot.intervalLabel}</span>
+                                    <span class="slot-status-text">${statusText}</span>
+                                </button>
+                            `;
+                        } else {
+                            return `
+                                <div class="clock-slot-picker-btn ${statusClass}" title="${slot.isPending ? 'Solicitação em análise' : slot.name}">
+                                    <span>${slot.intervalLabel}</span>
+                                    <span class="slot-status-text">${statusText}</span>
+                                </div>
+                            `;
+                        }
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        const closeBtn = document.getElementById('btn-close-clock-picker');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeHourPicker();
+            });
+        }
+
+        // Ao clicar em um horário disponível, abre o formulário com o horário pré-selecionado
+        clockSlotPicker.querySelectorAll('button.clock-slot-picker-btn.is-available').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const chosenTime = btn.dataset.shortTime;
+                if (typeof openModalVoluntariarComHorario === 'function') {
+                    openModalVoluntariarComHorario(chosenTime);
+                }
+            });
+        });
+    }
+
     // --- 1. RENDERIZA O RELÓGIO VISUAL (MANTÉM 24 HORAS COMO HOJE) ---
     function renderClockFaceSlots() {
         if (!clockFace) return;
@@ -465,6 +566,9 @@ async function setupPrayerClock() {
 
             const slotEl = document.createElement('div');
             slotEl.className = 'clock-slot';
+            if (selectedHourForPicker === h) {
+                slotEl.classList.add('is-selected-hour');
+            }
             slotEl.textContent = String(h).padStart(2, '0');
             slotEl.dataset.hour = h;
 
@@ -474,6 +578,7 @@ async function setupPrayerClock() {
 
             // Hover no número da hora (00-23): mostra resumo dos voluntários daquela hora
             slotEl.addEventListener('mouseenter', () => {
+                if (selectedHourForPicker !== null) return;
                 if (!centerDisplay) return;
                 const hourSlots = slots96.slice(h * 4, h * 4 + 4);
                 const activeVolunteers = hourSlots.filter(s => !s.isAvailable);
@@ -490,6 +595,18 @@ async function setupPrayerClock() {
                 }
             });
 
+            // Clique na hora (00-23): abre o centro do relógio com os 4 ciclos de 15 minutos
+            slotEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedHourForPicker === h) {
+                    closeHourPicker();
+                } else {
+                    clockFace.querySelectorAll('.clock-slot').forEach(el => el.classList.remove('is-selected-hour'));
+                    slotEl.classList.add('is-selected-hour');
+                    renderHourPicker(h);
+                }
+            });
+
             clockFace.appendChild(slotEl);
         }
     }
@@ -497,11 +614,18 @@ async function setupPrayerClock() {
     renderClockFaceSlots();
 
     const updateDisplayToCurrent = () => {
+        if (selectedHourForPicker !== null) return;
         if (!centerDisplay) return;
         centerDisplay.textContent = `Turno de: ${currentActiveName}`;
     };
 
     clockFace.addEventListener('mouseleave', updateDisplayToCurrent);
+
+    document.addEventListener('click', (e) => {
+        if (selectedHourForPicker !== null && clockFace && !clockFace.contains(e.target)) {
+            closeHourPicker();
+        }
+    });
 
     let clockResizeTimer = null;
     window.addEventListener('resize', () => {
@@ -899,9 +1023,12 @@ async function setupPrayerClock() {
             });
         }
 
-        const openModal = () => {
+        const openModal = (targetShortTime = null) => {
             populateHorariosSelect();
             if (formVoluntariar) formVoluntariar.reset();
+            if (targetShortTime && selectHorario) {
+                selectHorario.value = targetShortTime;
+            }
             if (statusVoluntariar) {
                 statusVoluntariar.style.display = 'none';
                 statusVoluntariar.textContent = '';
@@ -909,14 +1036,19 @@ async function setupPrayerClock() {
             if (errorNome) errorNome.style.display = 'none';
             modalVoluntariar.classList.add('is-visible');
             document.body.classList.add('modal-open');
+            if (inputNomeCompleto) {
+                setTimeout(() => inputNomeCompleto.focus(), 150);
+            }
         };
+
+        openModalVoluntariarComHorario = openModal;
 
         const closeModal = () => {
             modalVoluntariar.classList.remove('is-visible');
             document.body.classList.remove('modal-open');
         };
 
-        btnOpenVoluntariar.addEventListener('click', openModal);
+        btnOpenVoluntariar.addEventListener('click', () => openModal());
         if (btnCloseVoluntariar) btnCloseVoluntariar.addEventListener('click', closeModal);
         if (btnCancelVoluntariar) btnCancelVoluntariar.addEventListener('click', closeModal);
 
@@ -1009,6 +1141,10 @@ async function setupPrayerClock() {
                                     nameEl.textContent = 'Em análise';
                                 }
                             }
+                        }
+                        // Se o seletor da hora estiver aberto no centro do relógio, atualiza os botões imediatamente
+                        if (selectedHourForPicker !== null) {
+                            renderHourPicker(selectedHourForPicker);
                         }
                     }
 

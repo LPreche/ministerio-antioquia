@@ -905,15 +905,28 @@ footer a:hover {
 
 .prayer-layout-grid {
     display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 40px;
+    grid-template-columns: 360px 1fr;
+    gap: 35px;
     align-items: start;
 }
 
-.prayer-clock-wrapper {
+.prayer-main-column {
     display: flex;
-    justify-content: center; /* Alinha o relógio ao centro da sua coluna */
+    flex-direction: column;
+    gap: 25px;
+    width: 100%;
+}
+
+.prayer-main-column .prayer-requests-section {
+    width: 100%;
+}
+
+.prayer-main-column .prayer-clock-wrapper {
+    display: flex;
+    justify-content: center; /* Alinha o relógio ao centro da coluna */
     align-items: center;
+    width: 100%;
+    margin-top: 5px;
 }
 
 .prayer-name-list-wrapper {
@@ -1132,11 +1145,148 @@ footer a:hover {
     border-color: #d0d0d0;
 }
 
+.clock-slot.is-selected-hour {
+    border-color: #d35400 !important;
+    background-color: #fffaf5 !important;
+    color: #d35400 !important;
+    box-shadow: 0 0 14px rgba(211, 84, 0, 0.45) !important;
+    transform: var(--transform-base) scale(1.22) !important;
+    z-index: 25 !important;
+}
+
+/* Seletor dinâmico de ciclos no centro do relógio */
+.clock-center.is-picking {
+    width: 230px;
+    height: 230px;
+    border-radius: 20px;
+    padding: 12px;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    z-index: 30;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clock-picker-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between;
+}
+
+.clock-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #edf2f7;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.clock-picker-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.clock-picker-close {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #888;
+    padding: 0 4px;
+    transition: color 0.2s;
+}
+
+.clock-picker-close:hover {
+    color: #e74c3c;
+}
+
+.clock-picker-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.clock-slot-picker-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+}
+
+.clock-slot-picker-btn.is-available {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.clock-slot-picker-btn.is-available:hover {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+}
+
+.clock-slot-picker-btn.is-pending {
+    background: #fefce8;
+    color: #854d0e;
+    border-color: #fef08a;
+    cursor: not-allowed;
+    opacity: 0.9;
+}
+
+.clock-slot-picker-btn.is-occupied {
+    background: #f1f5f9;
+    color: #64748b;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.clock-slot-picker-btn .slot-status-text {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.clock-slot-picker-btn.is-available .slot-status-text {
+    background: rgba(22, 101, 52, 0.12);
+}
+
+.clock-slot-picker-btn.is-available:hover .slot-status-text {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
 @media (max-width: 900px) {
     .prayer-layout-grid {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+    /* No celular e telas menores, motivos e relógio ficam acima da escala */
+    .prayer-main-column {
+        order: 1;
     }
     .prayer-name-list-wrapper {
+        order: 2;
         margin-bottom: 30px;
     }
     .clock-face {
@@ -1147,6 +1297,11 @@ footer a:hover {
     .clock-center {
         width: 170px;
         height: 170px;
+    }
+    .clock-center.is-picking {
+        width: 220px;
+        height: 220px;
+        padding: 10px;
     }
     .clock-center .current-time {
         font-size: 2.8rem;
@@ -1172,6 +1327,11 @@ footer a:hover {
         height: 140px;
         padding: 10px;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.12);
+    }
+    .clock-center.is-picking {
+        width: 210px;
+        height: 210px;
+        padding: 8px;
     }
     .clock-center .current-time {
         font-size: 2.2rem;
@@ -1200,6 +1360,11 @@ footer a:hover {
         width: 120px;
         height: 120px;
         padding: 8px;
+    }
+    .clock-center.is-picking {
+        width: 195px;
+        height: 195px;
+        padding: 6px;
     }
     .clock-center .current-time {
         font-size: 1.85rem;
