@@ -630,20 +630,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const voluntarios = volRes.ok ? await volRes.json() : [];
             const motivos = motRes.ok ? await motRes.json() : [];
 
-            // 2. Formatar data do relógio por extenso
-            let dataRelogioFmt = 'Data não definida';
-            if (clockData.rel_data_relogio) {
-                const rawDate = new Date(clockData.rel_data_relogio);
-                const correctedDate = new Date(rawDate.getTime() + rawDate.getTimezoneOffset() * 60000);
-                dataRelogioFmt = correctedDate.toLocaleDateString('pt-BR', {
-                    weekday: 'long',
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                dataRelogioFmt = dataRelogioFmt.charAt(0).toUpperCase() + dataRelogioFmt.slice(1);
-            }
-
             // 3. Organizar os 96 ciclos de 15 minutos
             const allCycles = getAll15MinCycles();
             const normalizeToSlot = (t) => {
@@ -731,22 +717,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Informações do Relógio
-            doc.setTextColor(44, 62, 80);
+            // Nome do Relógio Centralizado entre o cabeçalho e a tabela
+            doc.setTextColor(62, 38, 14); // #3E260E
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.text(clockData.rel_titulo || 'Relógio de Oração', 14, 43);
+            doc.setFontSize(13);
+            doc.text(clockData.rel_titulo || 'Relógio de Oração', pageWidth / 2, 45, { align: 'center' });
 
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8.5);
-            doc.setTextColor(90, 90, 90);
-
-            const dataEmissao = new Date().toLocaleString('pt-BR');
-            doc.text(`Data do Relógio: ${dataRelogioFmt}`, 14, 49);
-            doc.text(`Voluntários Confirmados: ${filledSlotsCount} de 96 horários preenchidos (${Math.round((filledSlotsCount / 96) * 100)}%)`, 14, 54);
-            doc.text(`Emissão do Documento: ${dataEmissao}`, 14, 59);
-
-            let startTableY = 65;
+            let startTableY = 51;
 
             // Se houver motivos gerais para todos os horários, renderizar card destacado
             if (motivosGerais.length > 0) {
@@ -825,7 +802,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 doc.setTextColor(130, 130, 130);
                 doc.setFont('helvetica', 'normal');
                 doc.text(
-                    `Movimento Antioquia • ${clockData.rel_titulo || 'Relógio de Oração'} • ${dataRelogioFmt}`,
+                    `Movimento Antioquia • ${clockData.rel_titulo || 'Relógio de Oração'}`,
                     14,
                     pageHeight - 8
                 );
