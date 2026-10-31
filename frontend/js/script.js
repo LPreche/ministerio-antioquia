@@ -125,7 +125,7 @@ async function applyGlobalSettings() {
         }
 
         // --- PIX Control ---
-        if (currentPage === 'index.html') {
+        if (currentPage === 'index.html' || pageKey === 'index' || pageKey === '') {
             const pixCard = Array.from(document.querySelectorAll('.contribution-card')).find(card => card.querySelector('.pix-key'));
             if (pixCard) {
                 if (settings.cfg_pix_ativo) {
@@ -250,7 +250,7 @@ function setupMissionaryModal() {
         } else {
             // Default for dynamic missionaries
             modalButton.textContent = 'Contribuir';
-            modalButton.href = 'index.html#contribua'; // Points to the contribution section
+            modalButton.href = '/#contribua'; // Points to the contribution section
             modalButton.removeAttribute('target');
             modalButton.removeAttribute('rel');
         }
@@ -1703,7 +1703,7 @@ async function loadNews() {
 async function loadMissionaries() {
     const grid = document.querySelector('main .grid-2');
     // Only run on the missionaries page
-    if (!grid || !window.location.pathname.includes('missionarios.html')) return;
+    if (!grid || !window.location.pathname.includes('missionarios')) return;
 
     try {
         const response = await fetch('/api/missionaries');
@@ -1850,8 +1850,9 @@ async function loadTitusBoard() {
 
 async function loadPublicEvents() {
     // Detect current page
-    const isIndexPage = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html');
-    const isEventsPage = window.location.pathname.endsWith('eventos.html');
+    const pathname = window.location.pathname;
+    const isEventsPage = pathname.includes('eventos');
+    const isIndexPage = !isEventsPage && (pathname === '/' || pathname.endsWith('index.html') || pathname.endsWith('index') || !pathname.split('/').pop());
 
     // Find containers on the current page
     const indexGrid = isIndexPage ? document.querySelector('.events-section .events-grid') : null;
@@ -1958,7 +1959,7 @@ async function loadPublicEvents() {
                 });
 
                 if (upcomingEvents.length > 5 && indexBtnContainer) {
-                    indexBtnContainer.innerHTML = `<a href="eventos.html" class="btn btn-dark">Todos os eventos</a>`;
+                    indexBtnContainer.innerHTML = `<a href="/eventos" class="btn btn-dark">Todos os eventos</a>`;
                 }
             }
         }
@@ -2100,7 +2101,7 @@ function setupAdminRedirect() {
         // Previne comportamento padrão em touch, como scroll
         e.preventDefault();
         pressTimer = window.setTimeout(() => {
-            window.location.href = 'admin.html';
+            window.location.href = '/admin';
         }, 4000); // 4 segundos
     };
 
