@@ -28,12 +28,29 @@ app.use(session({
 
 // --- SERVINDO ARQUIVOS ESTÁTICOS DO FRONTEND ---
 const frontendPath = path.resolve(__dirname, '../../frontend');
-app.use(express.static(frontendPath));
+app.use(express.static(frontendPath, { extensions: ['html'] }));
 
 // Rotas de compatibilidade (para garantir que requisições legadas ou do service worker não quebrem)
 app.use('/style.css', express.static(path.join(frontendPath, 'css/style.css')));
 app.use('/script.js', express.static(path.join(frontendPath, 'js/script.js')));
 app.use('/admin.js', express.static(path.join(frontendPath, 'js/admin.js')));
+
+// Rotas limpas amigáveis (Clean URLs sem a extensão .html)
+const cleanRoutes = [
+    { route: '/admin', file: 'admin.html' },
+    { route: '/relogio', file: 'relogio.html' },
+    { route: '/noticias', file: 'noticias.html' },
+    { route: '/eventos', file: 'eventos.html' },
+    { route: '/missionarios', file: 'missionarios.html' },
+    { route: '/quadro-tito', file: 'quadro-tito.html' },
+    { route: '/contato', file: 'contato.html' }
+];
+
+cleanRoutes.forEach(({ route, file }) => {
+    app.get(route, (req, res) => {
+        res.sendFile(path.join(frontendPath, file));
+    });
+});
 
 // --- ROTAS DA API ---
 const authRoutes = require('./routes/auth.routes');
