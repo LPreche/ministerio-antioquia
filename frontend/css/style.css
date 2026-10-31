@@ -3126,20 +3126,54 @@ body.in-maintenance > footer {
 }
 
 #maintenance-modal .modal-content {
+    max-width: 460px;
+    padding: 36px 28px;
+    border-radius: 16px;
     text-align: center;
+    border-top: 5px solid var(--primary-color, #3E260E);
+    box-shadow: 0 15px 35px rgba(62, 38, 14, 0.22);
     transform: scale(0.95); /* Estado inicial para a animação de scale */
 }
 
 #maintenance-modal h3 {
-    font-family: var(--font-handwritten); /* Alterado para a fonte 'Kalam' */
-    font-size: 2.5rem; /* Aumentado um pouco para a nova fonte */
-    color: var(--primary-color);
+    font-family: var(--font-sans, 'Roboto', sans-serif);
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--primary-color, #3E260E);
+    margin: 8px 0 10px 0;
 }
 
-#maintenance-modal .maintenance-icon {
-    width: clamp(140px, 25vw, 200px); /* Tamanho responsivo para se ajustar à tela */
-    height: auto; /* Mantém a proporção da imagem */
-    margin-bottom: 20px;
+#maintenance-modal p {
+    color: #555;
+    font-size: 0.96rem;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.maintenance-icon-badge {
+    width: 82px;
+    height: 82px;
+    margin: 0 auto 16px auto;
+    border-radius: 50%;
+    background: #FAF7F2;
+    border: 2px solid #E5C39E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(62, 38, 14, 0.08);
+}
+
+.maintenance-pill {
+    display: inline-block;
+    padding: 4px 14px;
+    background: rgba(176, 140, 104, 0.15);
+    color: #7e5109;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
 }
 
 /* --- Toast / Snackbar Notifications --- */

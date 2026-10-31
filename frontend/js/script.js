@@ -107,14 +107,15 @@ async function applyGlobalSettings() {
         const settings = await response.json();
 
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        const pageKey = currentPage.replace(/\.html$/, '');
 
         // --- Maintenance Check ---
         const maintenanceModal = document.getElementById('maintenance-modal');
         let inMaintenance = false;
         if (maintenanceModal) {
-            if (currentPage === 'noticias.html' && settings.cfg_manutencao_noticias) inMaintenance = true;
-            if (currentPage === 'relogio.html' && settings.cfg_manutencao_relogio) inMaintenance = true;
-            if (currentPage === 'quadro-tito.html' && settings.cfg_manutencao_quadrotito) inMaintenance = true;
+            if ((pageKey === 'noticias' || currentPage === 'noticias.html') && settings.cfg_manutencao_noticias) inMaintenance = true;
+            if ((pageKey === 'relogio' || currentPage === 'relogio.html') && settings.cfg_manutencao_relogio) inMaintenance = true;
+            if ((pageKey === 'quadro-tito' || currentPage === 'quadro-tito.html') && settings.cfg_manutencao_quadrotito) inMaintenance = true;
         }
 
         if (inMaintenance) {
