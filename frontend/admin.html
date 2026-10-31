@@ -438,6 +438,19 @@
         </div>
     </div>
 
+    <!-- Modal de Confirmação e Aviso Personalizado (Substitui confirm e alert nativos) -->
+    <div id="confirm-modal" class="modal-overlay" style="z-index: 2500;">
+        <div class="modal-content" style="max-width: 440px; text-align: center; padding: 28px 24px;">
+            <div id="confirm-modal-icon" style="font-size: 2.6rem; margin-bottom: 12px; line-height: 1;">⚠️</div>
+            <h3 id="confirm-modal-title" style="margin: 0 0 10px 0; font-size: 1.25rem; color: var(--primary-color);">Confirmar Ação</h3>
+            <p id="confirm-modal-message" style="margin: 0 0 24px 0; color: #555; font-size: 0.95rem; line-height: 1.5; word-break: break-word;"></p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" class="btn btn-secondary" id="confirm-modal-btn-cancel" style="min-width: 105px;">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirm-modal-btn-confirm" style="min-width: 105px;">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <footer id="admin-footer" style="display: none;">
         <div class="container">
             <p>&copy; <span id="current-year"></span> Painel Administrativo - Movimento Antioquia.</p>

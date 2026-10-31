@@ -552,12 +552,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function loadImageAsBase64(url, makeBlackTransparent = false) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    if (makeBlackTransparent) {
+                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const d = imgData.data;
+                        for (let i = 0; i < d.length; i += 4) {
+                            const r = d[i];
+                            const g = d[i + 1];
+                            const b = d[i + 2];
+                            // Se o pixel for muito escuro (fundo preto da logo), torna transparente
+                            if (r < 30 && g < 30 && b < 30) {
+                                d[i + 3] = 0;
+                            }
+                        }
+                        ctx.putImageData(imgData, 0, 0);
+                    }
+
+                    resolve({
+                        dataUrl: canvas.toDataURL('image/png'),
+                        width: canvas.width,
+                        height: canvas.height
+                    });
+                } catch (err) {
+                    console.warn('Erro ao processar imagem para o PDF:', err);
+                    resolve(null);
+                }
+            };
+            img.onerror = () => {
+                console.warn(`Não foi possível carregar imagem para o PDF: ${url}`);
+                resolve(null);
+            };
+            img.src = url;
+        });
+    }
+
     async function exportRelogioPDF(relogioId) {
         const exportBtn = document.getElementById('btn-export-pdf-relogio');
         const originalText = exportBtn ? exportBtn.innerHTML : '';
 
         if (!window.jspdf || !window.jspdf.jsPDF) {
-            alert('A biblioteca de geração de PDF (jsPDF) não foi carregada. Por favor, recarregue a página.');
+            await showAlertModal({
+                title: 'Biblioteca não carregada',
+                message: 'A biblioteca de geração de PDF (jsPDF) não foi carregada. Por favor, recarregue a página.',
+                icon: '⚠️'
+            });
             return;
         }
 
@@ -567,11 +616,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 exportBtn.innerHTML = '<span>⏳</span> Gerando PDF...';
             }
 
-            // 1. Buscar dados do relógio, voluntários e motivos
-            const [relogioRes, volRes, motRes] = await Promise.all([
+            // 1. Buscar dados do relógio, voluntários, motivos e imagens em paralelo
+            const [relogioRes, volRes, motRes, logoAntioquia, logoIbicco] = await Promise.all([
                 fetch(`/api/relogios/${relogioId}`),
                 fetch(`/api/voluntarios?relogioId=${relogioId}`),
-                fetch(`/api/motivos-oracao?relogioId=${relogioId}`)
+                fetch(`/api/motivos-oracao?relogioId=${relogioId}`),
+                loadImageAsBase64('imagens/logo.png', false),
+                loadImageAsBase64('imagens/logo-ibicco.png', true)
             ]);
 
             if (!relogioRes.ok) throw new Error('Não foi possível obter os dados do relógio.');
@@ -647,36 +698,55 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
 
-            // Banner superior na 1ª página
+            // Banner superior na 1ª página com cantos arredondados
             doc.setFillColor(62, 38, 14); // #3E260E
-            doc.rect(14, 12, pageWidth - 28, 22, 'F');
+            doc.roundedRect(14, 10, pageWidth - 28, 26, 2, 2, 'F');
 
+            // Logo Antioquia (à esquerda)
+            if (logoAntioquia && logoAntioquia.dataUrl) {
+                try {
+                    doc.addImage(logoAntioquia.dataUrl, 'PNG', 18, 13, 20, 20);
+                } catch (e) {
+                    console.warn('Falha ao adicionar logo Antioquia no PDF:', e);
+                }
+            }
+
+            // Textos centrais do cabeçalho
             doc.setTextColor(255, 255, 255);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(13);
-            doc.text('MOVIMENTO ANTIOQUIA', 20, 21);
+            doc.text('MOVIMENTO ANTIOQUIA', 44, 21);
 
             doc.setTextColor(229, 195, 158); // #E5C39E dourado suave
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8.5);
-            doc.text('Escala Oficial de Oração • Ciclos de 15 Minutos', 20, 29);
+            doc.text('Escala Oficial de Oração • Ciclos de 15 Minutos', 44, 28);
+
+            // Logo IBICCO (à direita)
+            if (logoIbicco && logoIbicco.dataUrl) {
+                try {
+                    doc.addImage(logoIbicco.dataUrl, 'PNG', pageWidth - 14 - 20 - 4, 13, 20, 20);
+                } catch (e) {
+                    console.warn('Falha ao adicionar logo Ibicco no PDF:', e);
+                }
+            }
 
             // Informações do Relógio
             doc.setTextColor(44, 62, 80);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
-            doc.text(clockData.rel_titulo || 'Relógio de Oração', 14, 40);
+            doc.text(clockData.rel_titulo || 'Relógio de Oração', 14, 43);
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8.5);
             doc.setTextColor(90, 90, 90);
 
             const dataEmissao = new Date().toLocaleString('pt-BR');
-            doc.text(`Data do Relógio: ${dataRelogioFmt}`, 14, 46);
-            doc.text(`Voluntários Confirmados: ${filledSlotsCount} de 96 horários preenchidos (${Math.round((filledSlotsCount / 96) * 100)}%)`, 14, 51);
-            doc.text(`Emissão do Documento: ${dataEmissao}`, 14, 56);
+            doc.text(`Data do Relógio: ${dataRelogioFmt}`, 14, 49);
+            doc.text(`Voluntários Confirmados: ${filledSlotsCount} de 96 horários preenchidos (${Math.round((filledSlotsCount / 96) * 100)}%)`, 14, 54);
+            doc.text(`Emissão do Documento: ${dataEmissao}`, 14, 59);
 
-            let startTableY = 62;
+            let startTableY = 65;
 
             // Se houver motivos gerais para todos os horários, renderizar card destacado
             if (motivosGerais.length > 0) {
@@ -777,7 +847,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Erro ao gerar PDF da escala:', error);
-            alert(`Não foi possível gerar o PDF: ${error.message}`);
+            await showAlertModal({
+                title: 'Erro ao gerar PDF',
+                message: `Não foi possível gerar o PDF: ${error.message}`,
+                icon: '❌'
+            });
         } finally {
             if (exportBtn) {
                 exportBtn.disabled = false;
@@ -1353,6 +1427,140 @@ document.addEventListener('DOMContentLoaded', () => {
 
     modalCloseBtn.addEventListener('click', closeFormModal);
 
+    // --- MODAL DE CONFIRMAÇÃO E AVISO PERSONALIZADO ---
+    function showConfirmModal({
+        title = 'Confirmar Ação',
+        message = 'Tem certeza que deseja continuar?',
+        confirmText = 'Confirmar',
+        cancelText = 'Cancelar',
+        confirmType = 'primary', // 'primary', 'danger', 'success'
+        icon = '⚠️'
+    } = {}) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirm-modal');
+            if (!modal) {
+                resolve(window.confirm(message));
+                return;
+            }
+
+            const titleEl = document.getElementById('confirm-modal-title');
+            const msgEl = document.getElementById('confirm-modal-message');
+            const iconEl = document.getElementById('confirm-modal-icon');
+            const btnConfirm = document.getElementById('confirm-modal-btn-confirm');
+            const btnCancel = document.getElementById('confirm-modal-btn-cancel');
+
+            titleEl.textContent = title;
+            msgEl.innerHTML = message;
+            iconEl.textContent = icon;
+            btnConfirm.textContent = confirmText;
+            btnCancel.textContent = cancelText;
+            btnCancel.style.display = 'inline-block';
+
+            btnConfirm.className = 'btn';
+            if (confirmType === 'danger') {
+                btnConfirm.style.backgroundColor = '#c0392b';
+                btnConfirm.style.borderColor = '#c0392b';
+                btnConfirm.style.color = '#ffffff';
+            } else if (confirmType === 'success') {
+                btnConfirm.style.backgroundColor = '#27ae60';
+                btnConfirm.style.borderColor = '#27ae60';
+                btnConfirm.style.color = '#ffffff';
+            } else {
+                btnConfirm.style.backgroundColor = 'var(--primary-color, #3E260E)';
+                btnConfirm.style.borderColor = 'var(--primary-color, #3E260E)';
+                btnConfirm.style.color = '#ffffff';
+            }
+
+            modal.classList.add('is-visible');
+            document.body.classList.add('modal-open');
+
+            const cleanup = (result) => {
+                modal.classList.remove('is-visible');
+                document.body.classList.remove('modal-open');
+                btnConfirm.removeEventListener('click', onConfirm);
+                btnCancel.removeEventListener('click', onCancel);
+                modal.removeEventListener('click', onBackdrop);
+                document.removeEventListener('keydown', onKeyDown);
+                resolve(result);
+            };
+
+            const onConfirm = () => cleanup(true);
+            const onCancel = () => cleanup(false);
+            const onBackdrop = (e) => {
+                if (e.target === modal) cleanup(false);
+            };
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') cleanup(false);
+            };
+
+            btnConfirm.addEventListener('click', onConfirm);
+            btnCancel.addEventListener('click', onCancel);
+            modal.addEventListener('click', onBackdrop);
+            document.addEventListener('keydown', onKeyDown);
+
+            btnConfirm.focus();
+        });
+    }
+
+    function showAlertModal({
+        title = 'Aviso',
+        message = '',
+        icon = 'ℹ️',
+        buttonText = 'Entendido'
+    } = {}) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirm-modal');
+            if (!modal) {
+                window.alert(message);
+                resolve();
+                return;
+            }
+
+            const titleEl = document.getElementById('confirm-modal-title');
+            const msgEl = document.getElementById('confirm-modal-message');
+            const iconEl = document.getElementById('confirm-modal-icon');
+            const btnConfirm = document.getElementById('confirm-modal-btn-confirm');
+            const btnCancel = document.getElementById('confirm-modal-btn-cancel');
+
+            titleEl.textContent = title;
+            msgEl.innerHTML = message;
+            iconEl.textContent = icon;
+            btnConfirm.textContent = buttonText;
+            btnConfirm.className = 'btn';
+            btnConfirm.style.backgroundColor = 'var(--primary-color, #3E260E)';
+            btnConfirm.style.borderColor = 'var(--primary-color, #3E260E)';
+            btnConfirm.style.color = '#ffffff';
+            btnCancel.style.display = 'none';
+
+            modal.classList.add('is-visible');
+            document.body.classList.add('modal-open');
+
+            const cleanup = () => {
+                modal.classList.remove('is-visible');
+                document.body.classList.remove('modal-open');
+                btnCancel.style.display = 'inline-block';
+                btnConfirm.removeEventListener('click', onClose);
+                modal.removeEventListener('click', onBackdrop);
+                document.removeEventListener('keydown', onKeyDown);
+                resolve();
+            };
+
+            const onClose = () => cleanup();
+            const onBackdrop = (e) => {
+                if (e.target === modal) cleanup();
+            };
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') cleanup();
+            };
+
+            btnConfirm.addEventListener('click', onClose);
+            modal.addEventListener('click', onBackdrop);
+            document.addEventListener('keydown', onKeyDown);
+
+            btnConfirm.focus();
+        });
+    }
+
     // --- EVENT DELEGATION FOR ADD/EDIT/DELETE ---
     adminDashboard.addEventListener('click', async (e) => {
         const target = e.target;
@@ -1390,8 +1598,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 openFormModal('Detalhes da Sugestão', modalHtml, null);
                 dataForm.querySelector('.modal-manual-close').addEventListener('click', closeFormModal);
             } else {
-                // Se ainda não for encontrada após a atualização, informa o usuário.
-                alert('Não foi possível encontrar os detalhes da sugestão. A lista foi atualizada, por favor, verifique se a sugestão ainda está pendente.');
+                await showAlertModal({
+                    title: 'Sugestão não encontrada',
+                    message: 'Não foi possível encontrar os detalhes da sugestão. A lista foi atualizada, por favor, verifique se a sugestão ainda está pendente.',
+                    icon: 'ℹ️'
+                });
             }
             return; // Stop further execution
         }
@@ -1400,7 +1611,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.classList.contains('btn-approve')) {
             const id = target.dataset.id;
             if (!id) return;
-            if (confirm('Aprovar esta sugestão? Um novo post-it será criado.')) {
+            const confirmed = await showConfirmModal({
+                title: 'Aprovar Sugestão',
+                message: 'Deseja aprovar esta sugestão? Um novo post-it será criado no Quadro Tito.',
+                confirmText: 'Aprovar',
+                confirmType: 'success',
+                icon: '✅'
+            });
+            if (confirmed) {
                 try {
                     const response = await fetch(`/api/admin/sugestoes/${id}/aprovar`, { method: 'POST' });
                     if (!response.ok) throw new Error((await response.json()).error || 'Falha ao aprovar');
@@ -1411,14 +1629,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const quadroId = document.getElementById('quadro-select').value;
                     if (quadroId) {
                         const selectedOption = document.querySelector(`#quadro-select option[value="${quadroId}"]`);
-                        const endDateString = selectedOption.dataset.endDate;
+                        const endDateString = selectedOption ? selectedOption.dataset.endDate : null;
                         const today = new Date(); today.setHours(0,0,0,0);
-                        const endDate = new Date(endDateString);
+                        const endDate = endDateString ? new Date(endDateString) : today;
                         const isEditable = endDate >= today;
                         loadAdminPostitsForQuadro(quadroId, isEditable); // Recarrega post-its do quadro selecionado
                     }
                 } catch (error) {
-                    alert(`Erro ao aprovar: ${error.message}`);
+                    await showAlertModal({
+                        title: 'Erro ao Aprovar',
+                        message: `Erro ao aprovar: ${error.message}`,
+                        icon: '❌'
+                    });
                 }
             }
         }
@@ -1427,14 +1649,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.classList.contains('btn-refuse')) {
             const id = target.dataset.id;
             if (!id) return;
-            if (confirm('Recusar esta sugestão?')) {
+            const confirmed = await showConfirmModal({
+                title: 'Recusar Sugestão',
+                message: 'Tem certeza que deseja recusar esta sugestão?',
+                confirmText: 'Recusar',
+                confirmType: 'danger',
+                icon: '❌'
+            });
+            if (confirmed) {
                 try {
                     const response = await fetch(`/api/admin/sugestoes/${id}/recusar`, { method: 'POST' });
                     if (!response.ok) throw new Error((await response.json()).error || 'Falha ao recusar');
                     loadAdminSugestoes();
                     loadAdminSugestoesHistorico();
                 } catch (error) {
-                    alert(`Erro ao recusar: ${error.message}`);
+                    await showAlertModal({
+                        title: 'Erro ao Recusar',
+                        message: `Erro ao recusar: ${error.message}`,
+                        icon: '❌'
+                    });
                 }
             }
         }
@@ -1443,18 +1676,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.classList.contains('btn-approve-solicitacao')) {
             const id = target.dataset.id;
             if (!id) return;
-            if (confirm('Aceitar este voluntário? Ele será vinculado ao relógio de oração no horário escolhido e aparecerá publicamente.')) {
+            const confirmed = await showConfirmModal({
+                title: 'Aceitar Voluntário',
+                message: 'Deseja aceitar este voluntário? Ele será vinculado ao relógio de oração no horário escolhido e aparecerá publicamente.',
+                confirmText: 'Aceitar e Vincular',
+                confirmType: 'success',
+                icon: '🙏'
+            });
+            if (confirmed) {
                 try {
                     const response = await fetch(`/api/admin/solicitacoes-oracao/${id}/aprovar`, { method: 'POST' });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.error || 'Falha ao aceitar solicitação');
                     
-                    alert(result.message || 'Solicitação aceita com sucesso!');
+                    await showAlertModal({
+                        title: 'Sucesso',
+                        message: result.message || 'Solicitação aceita com sucesso!',
+                        icon: '✅'
+                    });
                     loadAdminSolicitacoes();
                     loadAdminSolicitacoesHistorico();
                     loadAdminRelogios(); // Atualiza voluntários na seção do relógio
                 } catch (error) {
-                    alert(`Erro ao aceitar solicitação: ${error.message}`);
+                    await showAlertModal({
+                        title: 'Erro ao Aceitar',
+                        message: `Erro ao aceitar solicitação: ${error.message}`,
+                        icon: '❌'
+                    });
                 }
             }
         }
@@ -1463,7 +1711,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.classList.contains('btn-refuse-solicitacao')) {
             const id = target.dataset.id;
             if (!id) return;
-            if (confirm('Deseja recusar esta solicitação de voluntário?')) {
+            const confirmed = await showConfirmModal({
+                title: 'Recusar Solicitação',
+                message: 'Deseja recusar esta solicitação de voluntário?',
+                confirmText: 'Recusar',
+                confirmType: 'danger',
+                icon: '🚫'
+            });
+            if (confirmed) {
                 try {
                     const response = await fetch(`/api/admin/solicitacoes-oracao/${id}/recusar`, { method: 'POST' });
                     const result = await response.json();
@@ -1472,7 +1727,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadAdminSolicitacoes();
                     loadAdminSolicitacoesHistorico();
                 } catch (error) {
-                    alert(`Erro ao recusar solicitação: ${error.message}`);
+                    await showAlertModal({
+                        title: 'Erro ao Recusar',
+                        message: `Erro ao recusar solicitação: ${error.message}`,
+                        icon: '❌'
+                    });
                 }
             }
         }
@@ -1519,20 +1778,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 openFormModal('Editar Quadro Tito', formHtml, handleQuadroSubmit);
 
                 document.getElementById('btn-delete-quadro-modal').addEventListener('click', async () => {
-                    if (confirm('Tem certeza que deseja excluir este quadro? Todos os post-its associados a ele também serão removidos.')) {
+                    const confirmed = await showConfirmModal({
+                        title: 'Excluir Quadro Tito',
+                        message: 'Tem certeza que deseja excluir este quadro? <strong>Todos os post-its associados a ele também serão removidos.</strong>',
+                        confirmText: 'Sim, Excluir',
+                        confirmType: 'danger',
+                        icon: '🗑️'
+                    });
+                    if (confirmed) {
                         try {
                             const response = await fetch(`/api/quadros/${quadroId}`, { method: 'DELETE' });
                             if (!response.ok) throw new Error((await response.json()).error || 'Falha ao excluir');
-                            alert('Quadro excluído com sucesso!');
                             closeFormModal();
+                            await showAlertModal({
+                                title: 'Quadro Excluído',
+                                message: 'O quadro foi excluído com sucesso!',
+                                icon: '✅'
+                            });
                             loadAdminTito(); // Recarrega o select de quadros
                         } catch (error) {
-                            alert(`Erro ao excluir: ${error.message}`);
+                            await showAlertModal({
+                                title: 'Erro ao Excluir',
+                                message: `Erro ao excluir: ${error.message}`,
+                                icon: '❌'
+                            });
                         }
                     }
                 });
             } catch (error) {
-                alert(`Não foi possível carregar os dados do quadro: ${error.message}`);
+                await showAlertModal({
+                    title: 'Erro',
+                    message: `Não foi possível carregar os dados do quadro: ${error.message}`,
+                    icon: '❌'
+                });
             }
             return;
         }
@@ -1568,21 +1846,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 openFormModal('Editar Relógio', formHtml, handleRelogioSubmit);
 
                 document.getElementById('btn-delete-relogio-modal').addEventListener('click', async () => {
-                    if (confirm('Tem certeza que deseja excluir este relógio? Todos os voluntários associados a ele também serão removidos. Esta ação não pode ser desfeita.')) {
+                    const confirmed = await showConfirmModal({
+                        title: 'Excluir Relógio de Oração',
+                        message: 'Tem certeza que deseja excluir este relógio? <strong>Todos os voluntários e motivos associados a ele também serão removidos.</strong> Esta ação não pode ser desfeita.',
+                        confirmText: 'Sim, Excluir',
+                        confirmType: 'danger',
+                        icon: '🗑️'
+                    });
+                    if (confirmed) {
                         try {
                             const response = await fetch(`/api/relogios/${relogioId}`, { method: 'DELETE' });
                             if (!response.ok) throw new Error((await response.json()).error || 'Falha ao excluir');
-                            alert('Relógio excluído com sucesso!');
                             closeFormModal();
+                            await showAlertModal({
+                                title: 'Relógio Excluído',
+                                message: 'O relógio de oração foi excluído com sucesso!',
+                                icon: '✅'
+                            });
                             await loadAdminRelogios();
                             document.querySelector('#prayer-clock-table tbody').innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os voluntários.</td></tr>';
                             document.getElementById('btn-add-volunteer').disabled = true;
                         } catch (error) {
-                            alert(`Erro ao excluir: ${error.message}`);
+                            await showAlertModal({
+                                title: 'Erro ao Excluir',
+                                message: `Erro ao excluir: ${error.message}`,
+                                icon: '❌'
+                            });
                         }
                     }
                 });
-            } catch(error) { alert(`Não foi possível carregar os dados para edição: ${error.message}`); }
+            } catch(error) {
+                await showAlertModal({
+                    title: 'Erro',
+                    message: `Não foi possível carregar os dados para edição: ${error.message}`,
+                    icon: '❌'
+                });
+            }
             return;
         }
 
@@ -1920,7 +2219,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.classList.contains('btn-delete')) {
             const id = target.dataset.id;
             const section = target.dataset.section;
-            if (confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) {
+            const confirmed = await showConfirmModal({
+                title: 'Excluir Item',
+                message: 'Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.',
+                confirmText: 'Sim, Excluir',
+                confirmType: 'danger',
+                icon: '🗑️'
+            });
+            if (confirmed) {
                 let url, loadFunction;
                 switch(section) {
                     case 'news':
@@ -2004,11 +2310,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 try {
                     const response = await fetch(url, { method: 'DELETE' });
-                    if (!response.ok) throw new Error('Falha ao excluir');
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || 'Falha ao excluir o registro.');
+                    }
                     loadFunction(); // Refresh the list
                 } catch (error) {
                     console.error(`Error deleting item from ${section}:`, error);
-                    alert('Ocorreu um erro ao excluir o item.');
+                    await showAlertModal({
+                        title: 'Erro ao Excluir',
+                        message: `Ocorreu um erro ao excluir o item: ${error.message}`,
+                        icon: '❌'
+                    });
                 }
             }
         }
@@ -2332,16 +2645,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const motivos = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
 
                 if (motivos.length === 0) {
-                    alert('Por favor, envie um arquivo .TXT ou digite pelo menos um motivo de oração.');
+                    await showAlertModal({
+                        title: 'Nenhum motivo informado',
+                        message: 'Por favor, envie um arquivo .TXT ou digite pelo menos um motivo de oração.',
+                        icon: '⚠️'
+                    });
                     return;
                 }
 
                 const replace = replaceCheckbox ? replaceCheckbox.checked : true;
                 const confirmMsg = replace
-                    ? `Deseja realmente substituir todos os motivos deste relógio e distribuir aleatoriamente os ${motivos.length} motivos entre os ciclos de 15 minutos?`
-                    : `Deseja distribuir aleatoriamente os ${motivos.length} motivos nos ciclos disponíveis?`;
+                    ? `Deseja realmente substituir todos os motivos deste relógio e distribuir aleatoriamente os <strong>${motivos.length}</strong> motivos entre os ciclos de 15 minutos?`
+                    : `Deseja distribuir aleatoriamente os <strong>${motivos.length}</strong> motivos nos ciclos disponíveis?`;
 
-                if (!confirm(confirmMsg)) return;
+                const confirmed = await showConfirmModal({
+                    title: 'Distribuir Motivos de Oração',
+                    message: confirmMsg,
+                    confirmText: 'Distribuir',
+                    confirmType: 'primary',
+                    icon: '🎲'
+                });
+                if (!confirmed) return;
 
                 try {
                     confirmBtn.disabled = true;
@@ -2359,14 +2683,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error(result.error || 'Erro ao importar motivos de oração.');
                     }
 
-                    alert(result.message || 'Motivos importados e distribuídos com sucesso!');
                     closeModal();
+                    await showAlertModal({
+                        title: 'Sucesso',
+                        message: result.message || 'Motivos importados e distribuídos com sucesso!',
+                        icon: '✅'
+                    });
 
                     // Recarrega a tabela de motivos do relógio
                     loadAdminMotivosOracao(relogioId, true);
                 } catch (error) {
                     console.error('Erro na importação de motivos:', error);
-                    alert(`Falha na importação: ${error.message}`);
+                    await showAlertModal({
+                        title: 'Falha na importação',
+                        message: error.message,
+                        icon: '❌'
+                    });
                     confirmBtn.disabled = false;
                     confirmBtn.innerHTML = '<span>🎲</span> Distribuir Aleatoriamente';
                 }
