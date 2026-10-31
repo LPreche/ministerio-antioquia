@@ -18,6 +18,9 @@
     <link rel="apple-touch-icon" href="imagens/logo_pwa.jpg">
     <!-- Script do TinyMCE (Versão Open-Source sem restrição ou bloqueio de domínio) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- jsPDF e jsPDF-AutoTable para exportação de relatórios em PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="admin-page-body">
 
@@ -167,7 +170,10 @@
                                 <label for="relogio-select">Selecione um Relógio</label>
                                 <select id="relogio-select" name="relogio-select" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"></select>
                             </div>
-                            <div id="relogio-buttons" style="display: flex; gap: 10px;">
+                            <div id="relogio-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" id="btn-export-pdf-relogio" disabled style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <span>📄</span> Exportar Escala (PDF)
+                                </button>
                                 <button class="btn btn-primary" id="btn-edit-relogio" style="display: none;">Editar Relógio</button>
                                 <button class="btn btn-dark" id="btn-add-relogio">Cadastrar Relógio</button>
                             </div>

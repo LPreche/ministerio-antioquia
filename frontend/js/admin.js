@@ -441,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const editRelogioBtn = document.getElementById('btn-edit-relogio');
         const addMotivoBtn = document.getElementById('btn-add-motivo');
         const importMotivosBtn = document.getElementById('btn-import-motivos');
+        const exportPdfBtn = document.getElementById('btn-export-pdf-relogio');
         const motivosTableBody = document.querySelector('#motivos-oracao-table tbody');
 
         try {
@@ -477,6 +478,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedId) {
                     editRelogioBtn.style.display = 'inline-block'; // Show edit clock button
                     if (importMotivosBtn) importMotivosBtn.disabled = false;
+                    if (exportPdfBtn) {
+                        exportPdfBtn.disabled = false;
+                        exportPdfBtn.classList.remove('btn-disabled');
+                    }
                     const relogioDateString = selectedOption.dataset.date;
                     
                     // --- Date Comparison Logic ---
@@ -502,6 +507,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     // No clock selected, clear tables
                     prayerClockTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os voluntários.</td></tr>';
                     motivosTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os motivos de oração.</td></tr>';
+                    if (exportPdfBtn) {
+                        exportPdfBtn.disabled = true;
+                        exportPdfBtn.classList.add('btn-disabled');
+                    }
                 }
 
                 // Add/remove disabled class for visual styling
@@ -518,12 +527,262 @@ document.addEventListener('DOMContentLoaded', () => {
                 editRelogioBtn.style.display = 'none';
                 addMotivoBtn.disabled = true;
                 addVolunteerBtn.disabled = true;
+                if (exportPdfBtn) {
+                    exportPdfBtn.disabled = true;
+                    exportPdfBtn.classList.add('btn-disabled');
+                }
                 [addVolunteerBtn, addMotivoBtn].filter(Boolean).forEach(btn => btn.classList.add('btn-disabled'));
+            }
+
+            if (exportPdfBtn && !exportPdfBtn.dataset.listenerAttached) {
+                exportPdfBtn.dataset.listenerAttached = 'true';
+                exportPdfBtn.addEventListener('click', () => {
+                    const selectedId = select.value;
+                    if (selectedId) {
+                        exportRelogioPDF(selectedId);
+                    } else {
+                        alert('Por favor, selecione um relógio de oração antes de exportar.');
+                    }
+                });
             }
 
         } catch (error) {
             console.error('Error loading relogios for admin:', error);
             select.innerHTML = '<option value="">Falha ao carregar relógios</option>';
+        }
+    }
+
+    async function exportRelogioPDF(relogioId) {
+        const exportBtn = document.getElementById('btn-export-pdf-relogio');
+        const originalText = exportBtn ? exportBtn.innerHTML : '';
+
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert('A biblioteca de geração de PDF (jsPDF) não foi carregada. Por favor, recarregue a página.');
+            return;
+        }
+
+        try {
+            if (exportBtn) {
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = '<span>⏳</span> Gerando PDF...';
+            }
+
+            // 1. Buscar dados do relógio, voluntários e motivos
+            const [relogioRes, volRes, motRes] = await Promise.all([
+                fetch(`/api/relogios/${relogioId}`),
+                fetch(`/api/voluntarios?relogioId=${relogioId}`),
+                fetch(`/api/motivos-oracao?relogioId=${relogioId}`)
+            ]);
+
+            if (!relogioRes.ok) throw new Error('Não foi possível obter os dados do relógio.');
+            const clockData = await relogioRes.json();
+            const voluntarios = volRes.ok ? await volRes.json() : [];
+            const motivos = motRes.ok ? await motRes.json() : [];
+
+            // 2. Formatar data do relógio por extenso
+            let dataRelogioFmt = 'Data não definida';
+            if (clockData.rel_data_relogio) {
+                const rawDate = new Date(clockData.rel_data_relogio);
+                const correctedDate = new Date(rawDate.getTime() + rawDate.getTimezoneOffset() * 60000);
+                dataRelogioFmt = correctedDate.toLocaleDateString('pt-BR', {
+                    weekday: 'long',
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                dataRelogioFmt = dataRelogioFmt.charAt(0).toUpperCase() + dataRelogioFmt.slice(1);
+            }
+
+            // 3. Organizar os 96 ciclos de 15 minutos
+            const allCycles = getAll15MinCycles();
+            const normalizeToSlot = (t) => {
+                if (!t) return null;
+                const parts = String(t).split(':');
+                const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+                const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+                return `${h}:${m}:00`;
+            };
+
+            const cleanText = (str) => {
+                if (!str) return '—';
+                return String(str).replace(/<[^>]*>?/gm, '').trim() || '—';
+            };
+
+            // Identificar motivos gerais (sem horário específico)
+            const motivosGerais = motivos.filter(m => {
+                const h = m.mot_horario;
+                return !h || h === 'geral' || h === 'todos';
+            });
+
+            // Montar linhas da tabela
+            let filledSlotsCount = 0;
+            const tableRows = allCycles.map(slot => {
+                const timeInterval = formatTimeInterval(slot);
+
+                // Voluntários neste horário
+                const slotVols = voluntarios.filter(v => normalizeToSlot(v.vol_horario_escolhido) === slot);
+                let volNome = '(Disponível)';
+                if (slotVols.length > 0) {
+                    filledSlotsCount++;
+                    volNome = slotVols.map(v => v.vol_nome_completo).join(', ');
+                }
+
+                // Motivos neste horário
+                const slotMots = motivos.filter(m => normalizeToSlot(m.mot_horario) === slot);
+                const motivoTexto = slotMots.length > 0
+                    ? slotMots.map(m => cleanText(m.mot_descricao)).join('\n\n')
+                    : '—';
+
+                return [timeInterval, volNome, motivoTexto];
+            });
+
+            // 4. Instanciar jsPDF (A4 em milímetros)
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            // Banner superior na 1ª página
+            doc.setFillColor(62, 38, 14); // #3E260E
+            doc.rect(14, 12, pageWidth - 28, 22, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.text('MOVIMENTO ANTIOQUIA', 20, 21);
+
+            doc.setTextColor(229, 195, 158); // #E5C39E dourado suave
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.text('Escala Oficial de Oração • Ciclos de 15 Minutos', 20, 29);
+
+            // Informações do Relógio
+            doc.setTextColor(44, 62, 80);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.text(clockData.rel_titulo || 'Relógio de Oração', 14, 40);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(90, 90, 90);
+
+            const dataEmissao = new Date().toLocaleString('pt-BR');
+            doc.text(`Data do Relógio: ${dataRelogioFmt}`, 14, 46);
+            doc.text(`Voluntários Confirmados: ${filledSlotsCount} de 96 horários preenchidos (${Math.round((filledSlotsCount / 96) * 100)}%)`, 14, 51);
+            doc.text(`Emissão do Documento: ${dataEmissao}`, 14, 56);
+
+            let startTableY = 62;
+
+            // Se houver motivos gerais para todos os horários, renderizar card destacado
+            if (motivosGerais.length > 0) {
+                const boxWidth = pageWidth - 28;
+                const genText = motivosGerais.map(m => `• ${cleanText(m.mot_descricao)}`).join('\n');
+                const lines = doc.splitTextToSize(genText, boxWidth - 10);
+                const boxHeight = 9 + (lines.length * 4.2);
+
+                doc.setFillColor(250, 248, 245);
+                doc.setDrawColor(176, 140, 104);
+                doc.setLineWidth(0.3);
+                doc.roundedRect(14, startTableY, boxWidth, boxHeight, 1.5, 1.5, 'FD');
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8);
+                doc.setTextColor(62, 38, 14);
+                doc.text('MOTIVOS GERAIS PARA TODA A ESCALA:', 18, startTableY + 5.5);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(55, 55, 55);
+                doc.text(lines, 18, startTableY + 10.5);
+
+                startTableY += boxHeight + 6;
+            }
+
+            // 5. Gerar a tabela com jsPDF-AutoTable
+            doc.autoTable({
+                startY: startTableY,
+                head: [['Horário', 'Intercessor(a)', 'Motivo de Oração']],
+                body: tableRows,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [62, 38, 14],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 9,
+                    halign: 'left',
+                    cellPadding: 3.5
+                },
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2.8,
+                    textColor: [44, 62, 80],
+                    lineColor: [225, 228, 232],
+                    lineWidth: 0.15,
+                    valign: 'top',
+                    overflow: 'linebreak'
+                },
+                columnStyles: {
+                    0: { cellWidth: 30, fontStyle: 'bold', halign: 'center' },
+                    1: { cellWidth: 50 },
+                    2: { cellWidth: 'auto' }
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 247, 244]
+                },
+                didParseCell: function(data) {
+                    if (data.column.index === 1 && data.cell.raw === '(Disponível)') {
+                        data.cell.styles.textColor = [160, 160, 160];
+                        data.cell.styles.fontStyle = 'italic';
+                    }
+                    if (data.column.index === 2 && data.cell.raw === '—') {
+                        data.cell.styles.textColor = [170, 170, 170];
+                        data.cell.styles.halign = 'center';
+                    }
+                },
+                margin: { top: 16, bottom: 16, left: 14, right: 14 }
+            });
+
+            // 6. Rodapé em todas as páginas
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(7.5);
+                doc.setTextColor(130, 130, 130);
+                doc.setFont('helvetica', 'normal');
+                doc.text(
+                    `Movimento Antioquia • ${clockData.rel_titulo || 'Relógio de Oração'} • ${dataRelogioFmt}`,
+                    14,
+                    pageHeight - 8
+                );
+                doc.text(
+                    `Página ${i} de ${totalPages}`,
+                    pageWidth - 14,
+                    pageHeight - 8,
+                    { align: 'right' }
+                );
+            }
+
+            // 7. Download automático do PDF
+            const sanitizedTitle = (clockData.rel_titulo || 'Relogio_Oracao')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9_-]/g, '_');
+            const filename = `Escala_Relogio_${sanitizedTitle}.pdf`;
+            doc.save(filename);
+
+        } catch (error) {
+            console.error('Erro ao gerar PDF da escala:', error);
+            alert(`Não foi possível gerar o PDF: ${error.message}`);
+        } finally {
+            if (exportBtn) {
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = originalText || '<span>📄</span> Exportar Escala (PDF)';
+            }
         }
     }
 
