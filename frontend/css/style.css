@@ -944,10 +944,78 @@ footer a:hover {
 
 .prayer-clock-top-section {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     width: 100%;
     padding: 10px 0 25px 0;
+}
+
+/* Indicador animado com seta para baixo no Relógio de Oração */
+.prayer-scroll-indicator {
+    text-align: center;
+    margin-top: 22px;
+}
+
+.scroll-down-btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+    color: var(--primary-color, #3E260E);
+    cursor: pointer;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.scroll-down-btn:hover {
+    transform: translateY(3px);
+}
+
+.scroll-down-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary-color, #3E260E);
+    letter-spacing: 0.3px;
+    transition: color 0.2s ease;
+}
+
+.scroll-down-btn:hover .scroll-down-text {
+    color: var(--secondary-color, #B08C68);
+}
+
+.scroll-down-arrow-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(62, 38, 14, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid rgba(176, 140, 104, 0.35);
+    color: var(--primary-color, #3E260E);
+    transition: all 0.25s ease;
+    animation: bounce-arrow 1.9s infinite ease-in-out;
+}
+
+.scroll-down-btn:hover .scroll-down-arrow-circle {
+    background: var(--primary-color, #3E260E);
+    color: #ffffff;
+    border-color: var(--primary-color, #3E260E);
+    box-shadow: 0 6px 18px rgba(62, 38, 14, 0.28);
+}
+
+@keyframes bounce-arrow {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(7px);
+    }
+    60% {
+        transform: translateY(3.5px);
+    }
 }
 
 .prayer-layout-grid {

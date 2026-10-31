@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relógio de Oração - Movimento Antioquia</title>
     <link rel="icon" href="imagens/logo.png" type="image/png">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=10">
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <!-- Theme color for browser UI -->
@@ -60,7 +60,7 @@
         </section>
 
         <!-- Relógio de Oração Centralizado no Topo (abaixo do título e data) -->
-        <section class="prayer-clock-top-section animate-on-scroll" style="padding: 10px 0 25px 0;">
+        <section class="prayer-clock-top-section animate-on-scroll" style="padding: 10px 0 20px 0;">
             <div class="container prayer-clock-container" style="display: flex; justify-content: center; align-items: center;">
                 <div class="clock-face" id="clock-face">
                     <div class="clock-hand" id="clock-hand"></div>
@@ -75,10 +75,23 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Indicador com Seta para Baixo (Convidando a rolar até a escala e motivos) -->
+            <div class="prayer-scroll-indicator">
+                <a href="#prayer-schedule-section" id="btn-scroll-to-schedule" class="scroll-down-btn" aria-label="Rolar para a escala e motivos de oração">
+                    <span class="scroll-down-text">Ver Escala e Motivos de Oração</span>
+                    <div class="scroll-down-arrow-circle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <polyline points="19 12 12 19 5 12"></polyline>
+                        </svg>
+                    </div>
+                </a>
+            </div>
         </section>
 
         <!-- Escala e Motivos de Oração -->
-        <div class="prayer-layout-grid container">
+        <div class="prayer-layout-grid container" id="prayer-schedule-section">
             <aside class="prayer-name-list-wrapper animate-on-scroll">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
                     <h4 style="margin: 0;">Escala de Oração</h4>
@@ -105,7 +118,7 @@
     </main>
 
     <button id="back-to-top" class="back-to-top" title="Voltar ao topo">↑</button>
-    <script src="js/script.js?v=9"></script>
+    <script src="js/script.js?v=10"></script>
 
     <!-- Modal Se Voluntariar -->
     <div id="modal-voluntariar" class="modal-overlay">

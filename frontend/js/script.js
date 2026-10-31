@@ -270,6 +270,23 @@ async function setupPrayerClock() {
     const clockFace = document.getElementById('clock-face');
     if (!clockFace) return; // Só executa na página do relógio
 
+    // Garante que a página do relógio sempre inicie no topo
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+
+    const btnScrollToSchedule = document.getElementById('btn-scroll-to-schedule');
+    if (btnScrollToSchedule) {
+        btnScrollToSchedule.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetSection = document.getElementById('prayer-schedule-section');
+            if (targetSection) {
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+
     const clockCenter = document.getElementById('clock-center');
     const clockDefaultView = document.getElementById('clock-default-view');
     const clockSlotPicker = document.getElementById('clock-slot-picker');
@@ -898,6 +915,18 @@ async function setupPrayerClock() {
         }
     }
 
+    // Função para rolar internamente a lista da escala sem afetar a janela da página
+    function scrollNameListToElement(element, smooth = true) {
+        if (!nameListContainer || !element) return;
+        const containerTop = nameListContainer.getBoundingClientRect().top;
+        const elementTop = element.getBoundingClientRect().top;
+        const relativeTop = elementTop - containerTop + nameListContainer.scrollTop;
+        nameListContainer.scrollTo({
+            top: relativeTop - (nameListContainer.clientHeight / 2) + (element.clientHeight / 2),
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    }
+
     function selectSlotForMotives(index) {
         selectedSlotIndex = index;
         if (nameListContainer) {
@@ -905,7 +934,7 @@ async function setupPrayerClock() {
             const targetLi = nameListContainer.querySelector(`li[data-index="${index}"]`);
             if (targetLi) {
                 targetLi.classList.add('is-selected');
-                targetLi.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                scrollNameListToElement(targetLi, true);
             }
         }
         renderMotivos(index, true);
@@ -923,7 +952,7 @@ async function setupPrayerClock() {
             if (!relogioAindaNaoIniciou) {
                 const activeLi = nameListContainer ? nameListContainer.querySelector(`li[data-index="${currentSlotIndex}"]`) : null;
                 if (activeLi) {
-                    activeLi.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    scrollNameListToElement(activeLi, true);
                 }
             }
         });
@@ -968,9 +997,9 @@ async function setupPrayerClock() {
                 const newActiveLi = nameListContainer.querySelector(`li[data-index="${currentSlotIndex}"]`);
                 if (newActiveLi) {
                     newActiveLi.classList.add('active');
-                    // Rola suavemente até o item atual na primeira carga
+                    // Rola apenas internamente a lista (sem mover a janela da página para baixo)
                     if (lastUpdated15MinIndex === -1 && selectedSlotIndex === null) {
-                        newActiveLi.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                        scrollNameListToElement(newActiveLi, false);
                     }
                 }
             }
