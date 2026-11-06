@@ -2732,18 +2732,63 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        openBtn.addEventListener('click', () => {
+        openBtn.addEventListener('click', async () => {
             const relogioId = relogioSelect ? relogioSelect.value : null;
             if (!relogioId) {
-                alert('Selecione primeiro um relógio de oração na lista acima.');
+                await showAlertModal({
+                    title: 'Aviso',
+                    message: 'Selecione primeiro um relógio de oração na lista acima.',
+                    icon: 'ℹ️'
+                });
                 return;
             }
             if (fileInput) fileInput.value = '';
             if (textPreview) textPreview.value = '';
             if (replaceCheckbox) replaceCheckbox.checked = true;
             updateCount();
+
+            // Atualiza informação dos horários preenchidos deste relógio
+            const slotsInfoText = document.getElementById('import-slots-text');
+            const slotsInfoBox = document.getElementById('import-slots-info');
+            if (slotsInfoText) slotsInfoText.innerHTML = 'Verificando voluntários cadastrados...';
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<span>🎲</span> Distribuir Aleatoriamente';
+            }
+
             modal.style.display = 'flex';
             modal.classList.add('is-visible');
+
+            try {
+                const volRes = await fetch(`/api/voluntarios?relogioId=${relogioId}`);
+                const volunteers = volRes.ok ? await volRes.json() : [];
+                const normalizeToSlot = (t) => {
+                    if (!t) return null;
+                    const parts = String(t).split(':');
+                    const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+                    const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+                    return `${h}:${m}:00`;
+                };
+                const filledSlots = new Set(volunteers.map(v => normalizeToSlot(v.vol_horario_escolhido)).filter(Boolean));
+
+                if (slotsInfoText && slotsInfoBox) {
+                    if (filledSlots.size === 0) {
+                        slotsInfoText.innerHTML = '⚠️ <strong>Atenção:</strong> Este relógio ainda não possui voluntários cadastrados. Cadastre voluntários antes de distribuir os motivos de oração.';
+                        slotsInfoBox.style.background = '#fdedec';
+                        slotsInfoBox.style.borderColor = '#f5b7b1';
+                        slotsInfoBox.style.color = '#78281f';
+                        if (confirmBtn) confirmBtn.disabled = true;
+                    } else {
+                        slotsInfoText.innerHTML = `👥 <strong>${filledSlots.size} horário(s) preenchido(s)</strong> por voluntários receberão a distribuição dos motivos.`;
+                        slotsInfoBox.style.background = '#FAF7F2';
+                        slotsInfoBox.style.borderColor = '#E6DFD5';
+                        slotsInfoBox.style.color = '#3E260E';
+                        if (confirmBtn) confirmBtn.disabled = false;
+                    }
+                }
+            } catch (err) {
+                console.warn('Erro ao checar voluntários para o modal de importação:', err);
+            }
         });
 
         if (closeBtn) closeBtn.addEventListener('click', closeModal);
@@ -2771,7 +2816,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
                 reader.onerror = () => {
-                    alert('Erro ao ler o arquivo .TXT selecionado.');
+                    showAlertModal({
+                        title: 'Erro',
+                        message: 'Erro ao ler o arquivo .TXT selecionado.',
+                        icon: '❌'
+                    });
                 };
                 reader.readAsText(file);
             });
@@ -2781,7 +2830,11 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmBtn.addEventListener('click', async () => {
                 const relogioId = relogioSelect ? relogioSelect.value : null;
                 if (!relogioId) {
-                    alert('Nenhum relógio selecionado.');
+                    await showAlertModal({
+                        title: 'Aviso',
+                        message: 'Nenhum relógio selecionado.',
+                        icon: 'ℹ️'
+                    });
                     return;
                 }
 
@@ -2799,8 +2852,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const replace = replaceCheckbox ? replaceCheckbox.checked : true;
                 const confirmMsg = replace
-                    ? `Deseja realmente substituir todos os motivos deste relógio e distribuir aleatoriamente os <strong>${motivos.length}</strong> motivos entre os ciclos de 15 minutos?`
-                    : `Deseja distribuir aleatoriamente os <strong>${motivos.length}</strong> motivos nos ciclos disponíveis?`;
+                    ? `Deseja realmente substituir todos os motivos deste relógio e distribuir aleatoriamente os <strong>${motivos.length}</strong> motivos exclusivamente entre os <strong>horários preenchidos por voluntários</strong>?`
+                    : `Deseja distribuir aleatoriamente os <strong>${motivos.length}</strong> motivos nos horários preenchidos disponíveis?`;
 
                 const confirmed = await showConfirmModal({
                     title: 'Distribuir Motivos de Oração',
@@ -2834,8 +2887,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         icon: '✅'
                     });
 
-                    // Recarrega a tabela de motivos do relógio
+                    // Recarrega a tabela de motivos do relógio e estatísticas
                     loadAdminMotivosOracao(relogioId, true);
+                    updateAdminRelogioStats(relogioId);
                 } catch (error) {
                     console.error('Erro na importação de motivos:', error);
                     await showAlertModal({

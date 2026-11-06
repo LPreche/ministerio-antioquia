@@ -365,28 +365,43 @@ router.post('/relogios/:id/import-motivos', isAuthenticated, async (req, res) =>
             return res.status(400).json({ error: 'Nenhum motivo de oração válido encontrado. Envie um arquivo .TXT com pelo menos um motivo.' });
         }
 
-        // Gera os 96 ciclos de 15 minutos em 24h (00:00:00 até 23:45:00)
-        const allCycles = [];
-        for (let h = 0; h < 24; h++) {
-            for (let m = 0; m < 60; m += 15) {
-                const hh = String(h).padStart(2, '0');
-                const mm = String(m).padStart(2, '0');
-                allCycles.push(`${hh}:${mm}:00`);
-            }
+        // Busca apenas os horários que possuem voluntários confirmados (horários preenchidos)
+        const [voluntarios] = await db.execute(
+            'SELECT DISTINCT vol_horario_escolhido FROM voluntarios WHERE id_relogio = ? AND vol_horario_escolhido IS NOT NULL',
+            [id]
+        );
+
+        const filledCycles = Array.from(
+            new Set(
+                voluntarios
+                    .map(v => normalizeTime(v.vol_horario_escolhido))
+                    .filter(Boolean)
+            )
+        ).sort();
+
+        if (filledCycles.length === 0) {
+            return res.status(400).json({
+                error: 'Este relógio ainda não possui horários preenchidos por voluntários. Cadastre voluntários antes de distribuir os motivos de oração.'
+            });
         }
 
         let targetCycles = [];
         if (replace) {
             // Remove motivos existentes do relógio
             await db.execute('DELETE FROM motivos_oracao WHERE id_relogio = ?', [id]);
-            targetCycles = [...allCycles];
+            targetCycles = [...filledCycles];
         } else {
-            // Busca ciclos já ocupados
-            const [existing] = await db.execute('SELECT mot_horario FROM motivos_oracao WHERE id_relogio = ? AND mot_horario IS NOT NULL', [id]);
-            const occupied = new Set(existing.map(e => e.mot_horario));
-            targetCycles = allCycles.filter(c => !occupied.has(c));
+            // Busca ciclos preenchidos que já possuem motivos
+            const [existing] = await db.execute(
+                'SELECT mot_horario FROM motivos_oracao WHERE id_relogio = ? AND mot_horario IS NOT NULL',
+                [id]
+            );
+            const occupied = new Set(existing.map(e => normalizeTime(e.mot_horario)).filter(Boolean));
+            targetCycles = filledCycles.filter(c => !occupied.has(c));
             if (targetCycles.length === 0) {
-                return res.status(400).json({ error: 'Todos os 96 ciclos de horário deste relógio já possuem motivos cadastrados.' });
+                return res.status(400).json({
+                    error: 'Todos os horários preenchidos deste relógio já possuem motivos de oração cadastrados.'
+                });
             }
         }
 
@@ -400,20 +415,28 @@ router.post('/relogios/:id/import-motivos', isAuthenticated, async (req, res) =>
             return arr;
         }
 
-        // Embaralha tanto os ciclos disponíveis quanto os motivos recebidos
+        // Embaralha tanto os ciclos preenchidos quanto os motivos recebidos
         const shuffledCycles = shuffle(targetCycles);
         const shuffledMotivos = shuffle(motivosList);
 
-        // Mapeia os motivos para os ciclos sorteados
+        // Mapeia os motivos para os ciclos preenchidos sorteados
         const cycleMotivesMap = new Map();
-        shuffledMotivos.forEach((motivo, index) => {
-            const cycleTime = shuffledCycles[index % shuffledCycles.length];
-            if (cycleMotivesMap.has(cycleTime)) {
-                cycleMotivesMap.set(cycleTime, cycleMotivesMap.get(cycleTime) + '\n\n• ' + motivo);
-            } else {
+        if (shuffledMotivos.length >= shuffledCycles.length) {
+            shuffledMotivos.forEach((motivo, index) => {
+                const cycleTime = shuffledCycles[index % shuffledCycles.length];
+                if (cycleMotivesMap.has(cycleTime)) {
+                    cycleMotivesMap.set(cycleTime, cycleMotivesMap.get(cycleTime) + '\n\n• ' + motivo);
+                } else {
+                    cycleMotivesMap.set(cycleTime, motivo);
+                }
+            });
+        } else {
+            // Se houver mais horários preenchidos que motivos, distribui uniformemente
+            shuffledCycles.forEach((cycleTime, index) => {
+                const motivo = shuffledMotivos[index % shuffledMotivos.length];
                 cycleMotivesMap.set(cycleTime, motivo);
-            }
-        });
+            });
+        }
 
         // Insere no banco de dados
         for (const [horario, descricao] of cycleMotivesMap.entries()) {
@@ -424,13 +447,13 @@ router.post('/relogios/:id/import-motivos', isAuthenticated, async (req, res) =>
         }
 
         // Notifica via Server-Sent Events para atualização em tempo real
-        sendSseUpdate('relogio_update', { relogioId: id, action: 'import_motivos' });
+        sendSseUpdate({ type: 'prayer_clock_updated', relogioId: id, action: 'import_motivos' });
 
         return res.json({
             success: true,
-            totalMotivos: shuffledMotivos.length,
+            totalMotivos: motivosList.length,
             ciclosPreenchidos: cycleMotivesMap.size,
-            message: `${shuffledMotivos.length} motivos distribuídos aleatoriamente em ${cycleMotivesMap.size} ciclos de 15 minutos com sucesso!`
+            message: `${motivosList.length} motivo(s) de oração distribuído(s) com sucesso entre os ${cycleMotivesMap.size} horário(s) preenchido(s) por voluntários!`
         });
     } catch (error) {
         console.error('Erro ao importar motivos de oração:', error);
