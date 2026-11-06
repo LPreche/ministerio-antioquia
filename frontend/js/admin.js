@@ -354,6 +354,109 @@ document.addEventListener('DOMContentLoaded', () => {
         return options;
     }
 
+    async function updateAdminRelogioStats(relogioId) {
+        const statsContainer = document.getElementById('relogio-stats-container');
+        if (!statsContainer) return;
+
+        if (!relogioId) {
+            statsContainer.style.display = 'none';
+            return;
+        }
+
+        try {
+            const [volRes, motRes] = await Promise.all([
+                fetch(`/api/voluntarios?relogioId=${relogioId}`),
+                fetch(`/api/motivos-oracao?relogioId=${relogioId}`)
+            ]);
+
+            const voluntarios = volRes.ok ? await volRes.json() : [];
+            const motivos = motRes.ok ? await motRes.json() : [];
+
+            const normalizeToSlot = (t) => {
+                if (!t) return null;
+                const parts = String(t).split(':');
+                const h = String(parseInt(parts[0], 10) || 0).padStart(2, '0');
+                const m = String(parseInt(parts[1], 10) || 0).padStart(2, '0');
+                return `${h}:${m}:00`;
+            };
+
+            const filledCycles = new Set();
+            voluntarios.forEach(v => {
+                const slot = normalizeToSlot(v.vol_horario_escolhido);
+                if (slot) filledCycles.add(slot);
+            });
+
+            const totalSlots = 96;
+            const filledSlotsCount = filledCycles.size;
+            const availableSlotsCount = totalSlots - filledSlotsCount;
+            const percentFilled = ((filledSlotsCount / totalSlots) * 100).toFixed(1);
+
+            // Turnos de 24 slots de 15 minutos (6 horas cada)
+            let madCount = 0, manCount = 0, tarCount = 0, noiCount = 0;
+            filledCycles.forEach(slot => {
+                const h = parseInt(slot.split(':')[0], 10);
+                if (h < 6) madCount++;
+                else if (h < 12) manCount++;
+                else if (h < 18) tarCount++;
+                else noiCount++;
+            });
+
+            const madPct = Math.round((madCount / 24) * 100);
+            const manPct = Math.round((manCount / 24) * 100);
+            const tarPct = Math.round((tarCount / 24) * 100);
+            const noiPct = Math.round((noiCount / 24) * 100);
+
+            const uniqueVols = new Set(
+                voluntarios
+                    .map(v => (v.vol_nome_completo || '').trim().toLowerCase())
+                    .filter(Boolean)
+            );
+
+            // Atualizar os elementos do DOM
+            const progressLabel = document.getElementById('stat-progress-label');
+            const filledPercent = document.getElementById('stat-filled-percent');
+            const progressBarFill = document.getElementById('stat-progress-bar-fill');
+            const statFilledSlots = document.getElementById('stat-filled-slots');
+            const statAvailableSlots = document.getElementById('stat-available-slots');
+            const statUniqueVols = document.getElementById('stat-unique-volunteers');
+            const statTotalMotivos = document.getElementById('stat-total-motivos');
+
+            const shiftMadVal = document.getElementById('stat-shift-mad');
+            const shiftMadBar = document.getElementById('stat-shift-mad-bar');
+            const shiftManVal = document.getElementById('stat-shift-man');
+            const shiftManBar = document.getElementById('stat-shift-man-bar');
+            const shiftTarVal = document.getElementById('stat-shift-tar');
+            const shiftTarBar = document.getElementById('stat-shift-tar-bar');
+            const shiftNoiVal = document.getElementById('stat-shift-noi');
+            const shiftNoiBar = document.getElementById('stat-shift-noi-bar');
+
+            if (progressLabel) progressLabel.textContent = `${filledSlotsCount} de 96 horários preenchidos`;
+            if (filledPercent) filledPercent.textContent = `${percentFilled}%`;
+            if (progressBarFill) progressBarFill.style.width = `${percentFilled}%`;
+
+            if (statFilledSlots) statFilledSlots.textContent = filledSlotsCount;
+            if (statAvailableSlots) statAvailableSlots.textContent = availableSlotsCount;
+            if (statUniqueVols) statUniqueVols.textContent = uniqueVols.size;
+            if (statTotalMotivos) statTotalMotivos.textContent = motivos.length;
+
+            if (shiftMadVal) shiftMadVal.textContent = `${madCount}/24 (${madPct}%)`;
+            if (shiftMadBar) shiftMadBar.style.width = `${madPct}%`;
+
+            if (shiftManVal) shiftManVal.textContent = `${manCount}/24 (${manPct}%)`;
+            if (shiftManBar) shiftManBar.style.width = `${manPct}%`;
+
+            if (shiftTarVal) shiftTarVal.textContent = `${tarCount}/24 (${tarPct}%)`;
+            if (shiftTarBar) shiftTarBar.style.width = `${tarPct}%`;
+
+            if (shiftNoiVal) shiftNoiVal.textContent = `${noiCount}/24 (${noiPct}%)`;
+            if (shiftNoiBar) shiftNoiBar.style.width = `${noiPct}%`;
+
+            statsContainer.style.display = 'block';
+        } catch (err) {
+            console.error('Erro ao atualizar estatísticas do relógio:', err);
+        }
+    }
+
     async function loadAdminPrayerClock(relogioId, isEditable = false) {
         if (!relogioId) return;
         const tableBody = document.querySelector('#prayer-clock-table tbody');
@@ -387,9 +490,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     tableBody.innerHTML += row;
                 });
             }
+            updateAdminRelogioStats(relogioId);
         } catch (error) {
             console.error('Error loading prayer clock volunteers for admin:', error);
             tableBody.innerHTML = `<tr><td colspan="3">Falha ao carregar voluntários.</td></tr>`;
+            updateAdminRelogioStats(relogioId);
         }
     }
 
@@ -428,9 +533,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     tableBody.innerHTML += row;
                 });
             }
+            updateAdminRelogioStats(relogioId);
         } catch (error) {
             console.error('Error loading prayer requests for admin:', error);
             tableBody.innerHTML = `<tr><td colspan="3">Falha ao carregar motivos de oração.</td></tr>`;
+            updateAdminRelogioStats(relogioId);
         }
     }
 
@@ -442,6 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const addMotivoBtn = document.getElementById('btn-add-motivo');
         const importMotivosBtn = document.getElementById('btn-import-motivos');
         const exportPdfBtn = document.getElementById('btn-export-pdf-relogio');
+        const exportPdfPreenchidosBtn = document.getElementById('btn-export-pdf-preenchidos');
         const motivosTableBody = document.querySelector('#motivos-oracao-table tbody');
 
         try {
@@ -468,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             select.addEventListener('change', () => {
                 const selectedOption = select.options[select.selectedIndex];
-                const selectedId = selectedOption.value;
+                const selectedId = selectedOption ? selectedOption.value : '';
 
                 // Reset buttons first
                 addVolunteerBtn.disabled = true;
@@ -481,6 +589,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (exportPdfBtn) {
                         exportPdfBtn.disabled = false;
                         exportPdfBtn.classList.remove('btn-disabled');
+                    }
+                    if (exportPdfPreenchidosBtn) {
+                        exportPdfPreenchidosBtn.disabled = false;
+                        exportPdfPreenchidosBtn.classList.remove('btn-disabled');
                     }
                     const relogioDateString = selectedOption.dataset.date;
                     
@@ -504,13 +616,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadAdminMotivosOracao(selectedId, isEditable);
 
                 } else {
-                    // No clock selected, clear tables
+                    // No clock selected, clear tables and stats
                     prayerClockTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os voluntários.</td></tr>';
                     motivosTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os motivos de oração.</td></tr>';
                     if (exportPdfBtn) {
                         exportPdfBtn.disabled = true;
                         exportPdfBtn.classList.add('btn-disabled');
                     }
+                    if (exportPdfPreenchidosBtn) {
+                        exportPdfPreenchidosBtn.disabled = true;
+                        exportPdfPreenchidosBtn.classList.add('btn-disabled');
+                    }
+                    updateAdminRelogioStats(null);
                 }
 
                 // Add/remove disabled class for visual styling
@@ -531,7 +648,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     exportPdfBtn.disabled = true;
                     exportPdfBtn.classList.add('btn-disabled');
                 }
+                if (exportPdfPreenchidosBtn) {
+                    exportPdfPreenchidosBtn.disabled = true;
+                    exportPdfPreenchidosBtn.classList.add('btn-disabled');
+                }
                 [addVolunteerBtn, addMotivoBtn].filter(Boolean).forEach(btn => btn.classList.add('btn-disabled'));
+                updateAdminRelogioStats(null);
             }
 
             if (exportPdfBtn && !exportPdfBtn.dataset.listenerAttached) {
@@ -539,9 +661,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 exportPdfBtn.addEventListener('click', () => {
                     const selectedId = select.value;
                     if (selectedId) {
-                        exportRelogioPDF(selectedId);
+                        exportRelogioPDF(selectedId, false);
                     } else {
-                        alert('Por favor, selecione um relógio de oração antes de exportar.');
+                        showAlertModal({
+                            title: 'Aviso',
+                            message: 'Por favor, selecione um relógio de oração antes de exportar.',
+                            icon: 'ℹ️'
+                        });
+                    }
+                });
+            }
+
+            if (exportPdfPreenchidosBtn && !exportPdfPreenchidosBtn.dataset.listenerAttached) {
+                exportPdfPreenchidosBtn.dataset.listenerAttached = 'true';
+                exportPdfPreenchidosBtn.addEventListener('click', () => {
+                    const selectedId = select.value;
+                    if (selectedId) {
+                        exportRelogioPDF(selectedId, true);
+                    } else {
+                        showAlertModal({
+                            title: 'Aviso',
+                            message: 'Por favor, selecione um relógio de oração antes de exportar.',
+                            icon: 'ℹ️'
+                        });
                     }
                 });
             }
@@ -597,8 +739,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function exportRelogioPDF(relogioId) {
-        const exportBtn = document.getElementById('btn-export-pdf-relogio');
+    async function exportRelogioPDF(relogioId, onlyFilled = false) {
+        const exportBtn = onlyFilled
+            ? document.getElementById('btn-export-pdf-preenchidos')
+            : document.getElementById('btn-export-pdf-relogio');
         const originalText = exportBtn ? exportBtn.innerHTML : '';
 
         if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -653,14 +797,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Montar linhas da tabela
             let filledSlotsCount = 0;
-            const tableRows = allCycles.map(slot => {
+            const rawRows = allCycles.map(slot => {
                 const timeInterval = formatTimeInterval(slot);
 
                 // Voluntários neste horário
                 const slotVols = voluntarios.filter(v => normalizeToSlot(v.vol_horario_escolhido) === slot);
                 let volNome = '(Disponível)';
+                let hasVol = false;
                 if (slotVols.length > 0) {
                     filledSlotsCount++;
+                    hasVol = true;
                     volNome = slotVols.map(v => v.vol_nome_completo).join(', ');
                 }
 
@@ -670,8 +816,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? slotMots.map(m => cleanText(m.mot_descricao)).join('\n\n')
                     : '—';
 
-                return [timeInterval, volNome, motivoTexto];
+                return { timeInterval, volNome, motivoTexto, hasVol };
             });
+
+            const tableRows = onlyFilled
+                ? rawRows.filter(r => r.hasVol).map(r => [r.timeInterval, r.volNome, r.motivoTexto])
+                : rawRows.map(r => [r.timeInterval, r.volNome, r.motivoTexto]);
+
+            if (onlyFilled && tableRows.length === 0) {
+                await showAlertModal({
+                    title: 'Nenhum Voluntário Cadastrado',
+                    message: 'Não há voluntários cadastrados neste relógio para gerar o PDF de horários preenchidos.',
+                    icon: 'ℹ️'
+                });
+                return;
+            }
 
             // 4. Instanciar jsPDF (A4 em milímetros)
             const { jsPDF } = window.jspdf;
@@ -706,7 +865,13 @@ document.addEventListener('DOMContentLoaded', () => {
             doc.setTextColor(229, 195, 158); // #E5C39E dourado suave
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8.5);
-            doc.text('Escala Oficial de Oração • Ciclos de 15 Minutos', 44, 28);
+            doc.text(
+                onlyFilled
+                    ? 'Escala Oficial de Oração • Horários Preenchidos'
+                    : 'Escala Oficial de Oração • Ciclos de 15 Minutos',
+                44,
+                28
+            );
 
             // Logo IBICCO (à direita)
             if (logoIbicco && logoIbicco.dataUrl) {
@@ -819,7 +984,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .normalize('NFD')
                 .replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^a-zA-Z0-9_-]/g, '_');
-            const filename = `Escala_Relogio_${sanitizedTitle}.pdf`;
+            const filename = onlyFilled
+                ? `Escala_Relogio_${sanitizedTitle}_Preenchidos.pdf`
+                : `Escala_Relogio_${sanitizedTitle}.pdf`;
             doc.save(filename);
 
         } catch (error) {
@@ -832,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             if (exportBtn) {
                 exportBtn.disabled = false;
-                exportBtn.innerHTML = originalText || '<span>📄</span> Exportar Escala (PDF)';
+                exportBtn.innerHTML = originalText || (onlyFilled ? '<span>📋</span> Apenas Preenchidos (PDF)' : '<span>📄</span> Escala Completa (PDF)');
             }
         }
     }

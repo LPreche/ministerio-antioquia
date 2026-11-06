@@ -172,10 +172,99 @@
                             </div>
                             <div id="relogio-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 <button class="btn btn-secondary" id="btn-export-pdf-relogio" disabled style="display: inline-flex; align-items: center; gap: 6px;">
-                                    <span>📄</span> Exportar Escala (PDF)
+                                    <span>📄</span> Escala Completa (PDF)
+                                </button>
+                                <button class="btn btn-secondary" id="btn-export-pdf-preenchidos" disabled style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <span>📋</span> Apenas Preenchidos (PDF)
                                 </button>
                                 <button class="btn btn-primary" id="btn-edit-relogio" style="display: none;">Editar Relógio</button>
                                 <button class="btn btn-dark" id="btn-add-relogio">Cadastrar Relógio</button>
+                            </div>
+                        </div>
+
+                        <!-- Seção de Estatísticas do Relógio Selecionado -->
+                        <div id="relogio-stats-container" class="relogio-stats-wrapper" style="display: none;">
+                            <div class="relogio-stats-card-main">
+                                <div class="stats-header-bar">
+                                    <div class="stats-title-group">
+                                        <span class="stats-icon-header">📊</span>
+                                        <h4 class="stats-title">Estatísticas de Cobertura do Relógio</h4>
+                                    </div>
+                                    <span class="stats-summary-pill" id="stat-summary-pill">96 Horários (24 Horas)</span>
+                                </div>
+
+                                <!-- Barra de Progresso Geral -->
+                                <div class="stats-progress-container">
+                                    <div class="stats-progress-labels">
+                                        <span>Progresso de Preenchimento: <strong id="stat-progress-label">0 de 96 horários</strong></span>
+                                        <span id="stat-filled-percent" class="stats-percent-tag">0.0%</span>
+                                    </div>
+                                    <div class="stats-progress-track">
+                                        <div class="stats-progress-bar-fill" id="stat-progress-bar-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Grade de Indicadores Principais -->
+                                <div class="stats-kpi-grid">
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: rgba(46, 125, 50, 0.1); color: #2e7d32;">✅</div>
+                                        <div class="stat-kpi-data">
+                                            <div class="stat-kpi-value" id="stat-filled-slots">0</div>
+                                            <div class="stat-kpi-label">Horários Preenchidos</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: rgba(176, 140, 104, 0.15); color: #8C6239;">⏳</div>
+                                        <div class="stat-kpi-data">
+                                            <div class="stat-kpi-value" id="stat-available-slots">96</div>
+                                            <div class="stat-kpi-label">Horários Vagos</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: rgba(62, 38, 14, 0.1); color: #3E260E;">👥</div>
+                                        <div class="stat-kpi-data">
+                                            <div class="stat-kpi-value" id="stat-unique-volunteers">0</div>
+                                            <div class="stat-kpi-label">Intercessores Únicos</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: rgba(212, 175, 55, 0.15); color: #9A7B1C;">📜</div>
+                                        <div class="stat-kpi-data">
+                                            <div class="stat-kpi-value" id="stat-total-motivos">0</div>
+                                            <div class="stat-kpi-label">Motivos Cadastrados</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Cobertura por Turno -->
+                                <div class="stats-shifts-section">
+                                    <div class="stats-shifts-title">Cobertura por Turno (24 horários cada)</div>
+                                    <div class="stats-shifts-grid">
+                                        <div class="stat-shift-card">
+                                            <div class="shift-name">🌙 Madrugada <small>(00h - 06h)</small></div>
+                                            <div class="shift-val" id="stat-shift-mad">0/24 (0%)</div>
+                                            <div class="shift-bar-track"><div class="shift-bar-fill" id="stat-shift-mad-bar" style="width: 0%;"></div></div>
+                                        </div>
+                                        <div class="stat-shift-card">
+                                            <div class="shift-name">🌅 Manhã <small>(06h - 12h)</small></div>
+                                            <div class="shift-val" id="stat-shift-man">0/24 (0%)</div>
+                                            <div class="shift-bar-track"><div class="shift-bar-fill" id="stat-shift-man-bar" style="width: 0%;"></div></div>
+                                        </div>
+                                        <div class="stat-shift-card">
+                                            <div class="shift-name">☀️ Tarde <small>(12h - 18h)</small></div>
+                                            <div class="shift-val" id="stat-shift-tar">0/24 (0%)</div>
+                                            <div class="shift-bar-track"><div class="shift-bar-fill" id="stat-shift-tar-bar" style="width: 0%;"></div></div>
+                                        </div>
+                                        <div class="stat-shift-card">
+                                            <div class="shift-name">🌆 Noite <small>(18h - 00h)</small></div>
+                                            <div class="shift-val" id="stat-shift-noi">0/24 (0%)</div>
+                                            <div class="shift-bar-track"><div class="shift-bar-fill" id="stat-shift-noi-bar" style="width: 0%;"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
     
