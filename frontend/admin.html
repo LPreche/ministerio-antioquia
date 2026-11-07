@@ -297,10 +297,16 @@
                             <h4 style="display: inline-block; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding: 0 10px 4px 10px; margin: 0;">MOTIVOS DE ORAÇÃO</h4>
                         </div>
                         <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 25px;">
+                            <button class="btn btn-secondary" id="btn-view-all-motivos" disabled style="display: inline-flex; align-items: center; gap: 6px;">
+                                <span>📜</span> Ver Todos os Motivos
+                            </button>
                             <button class="btn btn-secondary" id="btn-import-motivos" style="display: inline-flex; align-items: center; gap: 6px;">
                                 <span>📄</span> Importar Motivos (.TXT)
                             </button>
                             <button class="btn btn-add" data-section="motivos-oracao" id="btn-add-motivo" disabled>Adicionar Motivo de Oração</button>
+                            <button class="btn btn-danger" id="btn-delete-all-motivos" disabled style="display: inline-flex; align-items: center; gap: 6px;">
+                                <span>🗑️</span> Excluir Todos os Motivos
+                            </button>
                         </div>
                         <div class="table-wrapper">
                             <table class="admin-table" id="motivos-oracao-table">
@@ -481,6 +487,44 @@
                 <form id="data-form">
                     <!-- Campos do formulário serão injetados aqui via JS -->
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Listar Todos os Motivos de Oração -->
+    <div id="modal-view-all-motivos" class="modal-overlay">
+        <div class="modal-content" style="max-width: 820px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+            <button class="modal-close" id="btn-close-view-all-motivos" aria-label="Fechar">&times;</button>
+            <div class="modal-body" style="display: flex; flex-direction: column; overflow: hidden; padding-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+                    <div>
+                        <h3 style="margin: 0; color: var(--primary-color); display: flex; align-items: center; gap: 8px;">
+                            <span>📜</span> Todos os Motivos de Oração
+                        </h3>
+                        <p id="view-motivos-clock-subtitle" style="font-size: 0.88rem; color: #666; margin: 4px 0 0 0;"></p>
+                    </div>
+                    <span id="view-motivos-count-badge" style="font-size: 0.85rem; font-weight: 700; background: #eef2f7; color: #2c3e50; padding: 4px 12px; border-radius: 14px;">0 motivos</span>
+                </div>
+
+                <!-- Barra de Pesquisa Rápida -->
+                <div style="margin-bottom: 14px;">
+                    <input type="text" id="filter-all-motivos-input" placeholder="🔍 Buscar por palavra-chave ou horário (ex: 08:00)..." style="width: 100%; padding: 9px 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem;">
+                </div>
+
+                <!-- Container com Scroll para os Motivos -->
+                <div id="view-motivos-scroll-container" style="flex: 1; overflow-y: auto; max-height: 440px; border: 1px solid #e8e4de; border-radius: 8px; background: #fafaf9; padding: 12px;">
+                    <div id="view-motivos-list-content">
+                        <!-- Itens renderizados dinamicamente via JS -->
+                    </div>
+                </div>
+
+                <!-- Rodapé com Ações -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee;">
+                    <button type="button" class="btn btn-danger" id="btn-delete-all-motivos-inside-modal" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <span>🗑️</span> Excluir Todos os Motivos
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-close-view-all-motivos-footer">Fechar</button>
+                </div>
             </div>
         </div>
     </div>

@@ -3521,3 +3521,74 @@ body.in-maintenance > footer {
         gap: 10px;
     }
 }
+
+/* ==========================================================================
+   Botão de Perigo e Modal de Todos os Motivos
+   ========================================================================== */
+
+.btn-danger {
+    background-color: #c0392b !important;
+    color: #ffffff !important;
+    border: 1px solid #c0392b !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #a93226 !important;
+    border-color: #a93226 !important;
+    color: #ffffff !important;
+}
+
+.btn-danger:disabled,
+.btn-danger.btn-disabled {
+    background-color: #e6b0aa !important;
+    border-color: #e6b0aa !important;
+    color: #ffffff !important;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.motivo-card-item {
+    background: #ffffff;
+    border: 1px solid #e8e3dc;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.motivo-card-item:hover {
+    border-color: var(--symbol-color);
+    box-shadow: 0 3px 10px rgba(62, 38, 14, 0.08);
+}
+
+.motivo-card-time {
+    flex-shrink: 0;
+    min-width: 125px;
+}
+
+.motivo-card-content {
+    flex-grow: 1;
+    color: #2c3e50;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    white-space: pre-line;
+    word-break: break-word;
+}
+
+.motivo-card-actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+}
+
+.motivo-card-actions button {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+}
+

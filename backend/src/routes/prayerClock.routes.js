@@ -340,6 +340,34 @@ router.delete('/motivos-oracao/:id', isAuthenticated, async (req, res) => {
     }
 });
 
+// DELETE /api/relogios/:id/motivos-oracao (Admin)
+// Exclui todos os motivos de oração do relógio especificado
+router.delete('/relogios/:id/motivos-oracao', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verifica se o relógio existe
+        const [relogioRows] = await db.execute('SELECT id_relogio, rel_titulo FROM relogio_oracao WHERE id_relogio = ?', [id]);
+        if (relogioRows.length === 0) {
+            return res.status(404).json({ error: 'Relógio de oração não encontrado.' });
+        }
+
+        const [result] = await db.execute('DELETE FROM motivos_oracao WHERE id_relogio = ?', [id]);
+
+        // Notifica via Server-Sent Events para atualização em tempo real
+        sendSseUpdate({ type: 'prayer_clock_updated', relogioId: id, action: 'delete_all_motivos' });
+
+        res.json({
+            success: true,
+            deletedCount: result.affectedRows,
+            message: `Todos os motivos de oração foram excluídos com sucesso (${result.affectedRows} motivos removidos).`
+        });
+    } catch (error) {
+        console.error('Erro ao excluir todos os motivos de oração:', error);
+        res.status(500).json({ error: 'Erro interno ao excluir motivos de oração.' });
+    }
+});
+
 // POST /api/relogios/:id/import-motivos (Admin)
 // Importa motivos a partir de arquivo/texto (.TXT) e distribui aleatoriamente nos ciclos de 15 minutos
 router.post('/relogios/:id/import-motivos', isAuthenticated, async (req, res) => {

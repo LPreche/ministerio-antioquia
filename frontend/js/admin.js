@@ -13,10 +13,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let suggestionsEventSource = null; // Variável para a conexão SSE
     let pendingSuggestions = []; // Cache para detalhes das sugestões
 
-    // --- HELPER PARA ESCAPAR ATRIBUTOS HTML ---
+    // --- HELPER PARA ESCAPAR ATRIBUTOS E TEXTO HTML ---
     function escapeAttr(text) {
         if (typeof text !== 'string') return text;
         return text.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     // --- TAB NAVIGATION LOGIC ---
@@ -501,6 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadAdminMotivosOracao(relogioId, isEditable = false) {
         if (!relogioId) return;
         const tableBody = document.querySelector('#motivos-oracao-table tbody');
+        const deleteAllBtn = document.getElementById('btn-delete-all-motivos');
         try {
             const response = await fetch(`/api/motivos-oracao?relogioId=${relogioId}`);
             if (!response.ok) throw new Error('Failed to fetch prayer requests');
@@ -510,7 +521,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
             if (items.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="3">Nenhum motivo de oração cadastrado para este relógio.</td></tr>';
+                if (deleteAllBtn) {
+                    deleteAllBtn.disabled = true;
+                    deleteAllBtn.classList.add('btn-disabled');
+                }
             } else {
+                if (deleteAllBtn) {
+                    deleteAllBtn.disabled = !isEditable;
+                    deleteAllBtn.classList.toggle('btn-disabled', !isEditable);
+                }
                 items.forEach(item => {
                     const actionsHtml = isEditable
                         ? `<button class="btn-edit" data-id="${item.id_motivo}" data-section="motivos-oracao">Editar</button>
@@ -537,6 +556,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error loading prayer requests for admin:', error);
             tableBody.innerHTML = `<tr><td colspan="3">Falha ao carregar motivos de oração.</td></tr>`;
+            if (deleteAllBtn) {
+                deleteAllBtn.disabled = true;
+                deleteAllBtn.classList.add('btn-disabled');
+            }
             updateAdminRelogioStats(relogioId);
         }
     }
@@ -548,6 +571,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const editRelogioBtn = document.getElementById('btn-edit-relogio');
         const addMotivoBtn = document.getElementById('btn-add-motivo');
         const importMotivosBtn = document.getElementById('btn-import-motivos');
+        const viewAllMotivosBtn = document.getElementById('btn-view-all-motivos');
+        const deleteAllMotivosBtn = document.getElementById('btn-delete-all-motivos');
         const exportPdfBtn = document.getElementById('btn-export-pdf-relogio');
         const exportPdfPreenchidosBtn = document.getElementById('btn-export-pdf-preenchidos');
         const motivosTableBody = document.querySelector('#motivos-oracao-table tbody');
@@ -586,6 +611,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedId) {
                     editRelogioBtn.style.display = 'inline-block'; // Show edit clock button
                     if (importMotivosBtn) importMotivosBtn.disabled = false;
+                    if (viewAllMotivosBtn) {
+                        viewAllMotivosBtn.disabled = false;
+                        viewAllMotivosBtn.classList.remove('btn-disabled');
+                    }
                     if (exportPdfBtn) {
                         exportPdfBtn.disabled = false;
                         exportPdfBtn.classList.remove('btn-disabled');
@@ -610,6 +639,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Enable/disable main buttons based on date
                     addVolunteerBtn.disabled = !isEditable;
                     addMotivoBtn.disabled = !isEditable;
+                    if (deleteAllMotivosBtn) {
+                        deleteAllMotivosBtn.disabled = !isEditable;
+                        deleteAllMotivosBtn.classList.toggle('btn-disabled', !isEditable);
+                    }
 
                     // Load tables with editability flag
                     loadAdminPrayerClock(selectedId, isEditable);
@@ -619,6 +652,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     // No clock selected, clear tables and stats
                     prayerClockTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os voluntários.</td></tr>';
                     motivosTableBody.innerHTML = '<tr><td colspan="3">Selecione um relógio para ver os motivos de oração.</td></tr>';
+                    if (viewAllMotivosBtn) {
+                        viewAllMotivosBtn.disabled = true;
+                        viewAllMotivosBtn.classList.add('btn-disabled');
+                    }
+                    if (deleteAllMotivosBtn) {
+                        deleteAllMotivosBtn.disabled = true;
+                        deleteAllMotivosBtn.classList.add('btn-disabled');
+                    }
                     if (exportPdfBtn) {
                         exportPdfBtn.disabled = true;
                         exportPdfBtn.classList.add('btn-disabled');
@@ -644,6 +685,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 editRelogioBtn.style.display = 'none';
                 addMotivoBtn.disabled = true;
                 addVolunteerBtn.disabled = true;
+                if (viewAllMotivosBtn) {
+                    viewAllMotivosBtn.disabled = true;
+                    viewAllMotivosBtn.classList.add('btn-disabled');
+                }
+                if (deleteAllMotivosBtn) {
+                    deleteAllMotivosBtn.disabled = true;
+                    deleteAllMotivosBtn.classList.add('btn-disabled');
+                }
                 if (exportPdfBtn) {
                     exportPdfBtn.disabled = true;
                     exportPdfBtn.classList.add('btn-disabled');
@@ -654,6 +703,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 [addVolunteerBtn, addMotivoBtn].filter(Boolean).forEach(btn => btn.classList.add('btn-disabled'));
                 updateAdminRelogioStats(null);
+            }
+
+            if (viewAllMotivosBtn && !viewAllMotivosBtn.dataset.listenerAttached) {
+                viewAllMotivosBtn.dataset.listenerAttached = 'true';
+                viewAllMotivosBtn.addEventListener('click', () => {
+                    const selectedId = select.value;
+                    if (selectedId) {
+                        openViewAllMotivosModal(selectedId);
+                    } else {
+                        showAlertModal({
+                            title: 'Aviso',
+                            message: 'Por favor, selecione um relógio de oração primeiro.',
+                            icon: 'ℹ️'
+                        });
+                    }
+                });
+            }
+
+            if (deleteAllMotivosBtn && !deleteAllMotivosBtn.dataset.listenerAttached) {
+                deleteAllMotivosBtn.dataset.listenerAttached = 'true';
+                deleteAllMotivosBtn.addEventListener('click', () => {
+                    const selectedId = select.value;
+                    if (selectedId) {
+                        deleteAllMotivos(selectedId);
+                    } else {
+                        showAlertModal({
+                            title: 'Aviso',
+                            message: 'Por favor, selecione um relógio de oração primeiro.',
+                            icon: 'ℹ️'
+                        });
+                    }
+                });
             }
 
             if (exportPdfBtn && !exportPdfBtn.dataset.listenerAttached) {
@@ -1097,6 +1178,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const isEditable = correctedRelogioDate >= today;
                 loadAdminMotivosOracao(relogioId, isEditable);
+                const viewAllModal = document.getElementById('modal-view-all-motivos');
+                if (viewAllModal && viewAllModal.classList.contains('is-visible')) {
+                    loadAndRenderAllMotivosInModal(relogioId);
+                }
             }
             return true;
         } catch (error) {
@@ -2425,6 +2510,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             const isEditable = correctedRelogioDate >= today;
                             loadAdminMotivosOracao(relogioId, isEditable);
+                            const viewAllModal = document.getElementById('modal-view-all-motivos');
+                            if (viewAllModal && viewAllModal.classList.contains('is-visible')) {
+                                loadAndRenderAllMotivosInModal(relogioId);
+                            }
                         };
                         break;
                     case 'postits':
@@ -2691,6 +2780,262 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- LÓGICA DO MODAL DE LISTAGEM DE TODOS OS MOTIVOS DE ORAÇÃO ---
+    let currentModalMotivos = [];
+    let currentModalRelogioId = null;
+    let currentModalIsEditable = false;
+
+    async function openViewAllMotivosModal(relogioId) {
+        const modal = document.getElementById('modal-view-all-motivos');
+        const filterInput = document.getElementById('filter-all-motivos-input');
+        const subtitleEl = document.getElementById('view-motivos-clock-subtitle');
+        const deleteAllInsideBtn = document.getElementById('btn-delete-all-motivos-inside-modal');
+
+        if (!modal) return;
+
+        currentModalRelogioId = relogioId;
+        if (filterInput) filterInput.value = '';
+
+        const select = document.getElementById('relogio-select');
+        const selectedOption = select ? select.options[select.selectedIndex] : null;
+        const clockTitle = selectedOption ? selectedOption.textContent : 'Relógio de Oração';
+        if (subtitleEl) subtitleEl.textContent = `Relógio: ${clockTitle}`;
+
+        let isEditable = false;
+        if (selectedOption && selectedOption.dataset.date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const relogioDate = new Date(selectedOption.dataset.date);
+            const correctedRelogioDate = new Date(relogioDate.getTime() + relogioDate.getTimezoneOffset() * 60000);
+            correctedRelogioDate.setHours(0, 0, 0, 0);
+            isEditable = correctedRelogioDate >= today;
+        }
+        currentModalIsEditable = isEditable;
+
+        if (deleteAllInsideBtn) {
+            deleteAllInsideBtn.disabled = !isEditable;
+            deleteAllInsideBtn.classList.toggle('btn-disabled', !isEditable);
+        }
+
+        modal.style.display = 'flex';
+        modal.classList.add('is-visible');
+        document.body.classList.add('modal-open');
+
+        await loadAndRenderAllMotivosInModal(relogioId);
+    }
+
+    async function loadAndRenderAllMotivosInModal(relogioId) {
+        const listContent = document.getElementById('view-motivos-list-content');
+        const filterInput = document.getElementById('filter-all-motivos-input');
+
+        if (listContent) {
+            listContent.innerHTML = '<div style="text-align: center; padding: 30px; color: #888;"><span>⏳</span> Carregando motivos de oração...</div>';
+        }
+
+        try {
+            const response = await fetch(`/api/motivos-oracao?relogioId=${relogioId}`);
+            if (!response.ok) throw new Error('Falha ao carregar motivos');
+            currentModalMotivos = await response.json();
+
+            const query = filterInput ? filterInput.value.trim().toLowerCase() : '';
+            renderFilteredMotivos(query);
+        } catch (error) {
+            console.error('Erro ao buscar motivos para o modal:', error);
+            if (listContent) {
+                listContent.innerHTML = '<div style="text-align: center; padding: 30px; color: #c0392b;">Falha ao carregar motivos de oração.</div>';
+            }
+        }
+    }
+
+    function renderFilteredMotivos(query = '') {
+        const listContent = document.getElementById('view-motivos-list-content');
+        const countBadge = document.getElementById('view-motivos-count-badge');
+        const deleteAllInsideBtn = document.getElementById('btn-delete-all-motivos-inside-modal');
+
+        if (!listContent) return;
+
+        const filtered = currentModalMotivos.filter(item => {
+            if (!query) return true;
+            const timeStr = item.mot_horario ? formatTimeInterval(item.mot_horario).toLowerCase() : 'geral todos';
+            const descStr = (item.mot_descricao || '').toLowerCase();
+            return timeStr.includes(query) || descStr.includes(query);
+        });
+
+        if (countBadge) {
+            countBadge.textContent = `${currentModalMotivos.length} motivo${currentModalMotivos.length === 1 ? '' : 's'}`;
+            if (currentModalMotivos.length > 0) {
+                countBadge.style.background = '#e8f8f5';
+                countBadge.style.color = '#117a65';
+            } else {
+                countBadge.style.background = '#eef2f7';
+                countBadge.style.color = '#2c3e50';
+            }
+        }
+
+        if (deleteAllInsideBtn) {
+            deleteAllInsideBtn.disabled = !currentModalIsEditable || currentModalMotivos.length === 0;
+            deleteAllInsideBtn.classList.toggle('btn-disabled', !currentModalIsEditable || currentModalMotivos.length === 0);
+        }
+
+        if (currentModalMotivos.length === 0) {
+            listContent.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
+                    <div style="font-size: 2.2rem; margin-bottom: 10px;">📜</div>
+                    <strong style="display: block; font-size: 1.05rem; margin-bottom: 6px; color: #444;">Nenhum motivo cadastrado</strong>
+                    <span>Cadastre motivos manualmente ou importe um arquivo .TXT no painel.</span>
+                </div>
+            `;
+            return;
+        }
+
+        if (filtered.length === 0) {
+            listContent.innerHTML = `
+                <div style="text-align: center; padding: 35px 20px; color: #7f8c8d;">
+                    <div style="font-size: 1.8rem; margin-bottom: 8px;">🔍</div>
+                    <strong>Nenhum motivo encontrado para "${escapeHtml(query)}"</strong>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(item => {
+            const cycleLabel = item.mot_horario
+                ? `<span class="badge-cycle" style="background:#eef2f7;color:#2c3e50;padding:4px 10px;border-radius:6px;font-weight:700;font-size:0.85rem;display:inline-block;">${formatTimeInterval(item.mot_horario)}</span>`
+                : `<span style="color:#7f8c8d;font-style:italic;font-size:0.85rem;">Todos os horários (Geral)</span>`;
+
+            const actionsHtml = currentModalIsEditable
+                ? `<div class="motivo-card-actions">
+                       <button class="btn-edit" style="padding: 4px 10px; font-size: 0.8rem;" data-id="${item.id_motivo}" data-section="motivos-oracao">Editar</button>
+                       <button class="btn-delete" style="padding: 4px 10px; font-size: 0.8rem;" data-id="${item.id_motivo}" data-section="motivos-oracao">Excluir</button>
+                   </div>`
+                : `<span style="font-size:0.8rem;color:#95a5a6;">Visualização</span>`;
+
+            html += `
+                <div class="motivo-card-item" data-id="${item.id_motivo}">
+                    <div class="motivo-card-time">
+                        ${cycleLabel}
+                    </div>
+                    <div class="motivo-card-content">
+                        ${escapeHtml(item.mot_descricao)}
+                    </div>
+                    ${actionsHtml}
+                </div>
+            `;
+        });
+
+        listContent.innerHTML = html;
+    }
+
+    function initViewAllMotivosModal() {
+        const modal = document.getElementById('modal-view-all-motivos');
+        const closeBtn = document.getElementById('btn-close-view-all-motivos');
+        const closeFooterBtn = document.getElementById('btn-close-view-all-motivos-footer');
+        const filterInput = document.getElementById('filter-all-motivos-input');
+        const deleteAllInsideBtn = document.getElementById('btn-delete-all-motivos-inside-modal');
+
+        if (!modal) return;
+
+        function closeModal() {
+            modal.classList.remove('is-visible');
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (closeFooterBtn) closeFooterBtn.addEventListener('click', closeModal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        if (filterInput) {
+            filterInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim().toLowerCase();
+                renderFilteredMotivos(query);
+            });
+        }
+
+        if (deleteAllInsideBtn) {
+            deleteAllInsideBtn.addEventListener('click', () => {
+                if (currentModalRelogioId) {
+                    deleteAllMotivos(currentModalRelogioId);
+                }
+            });
+        }
+    }
+
+    async function deleteAllMotivos(relogioId) {
+        if (!relogioId) {
+            await showAlertModal({
+                title: 'Aviso',
+                message: 'Por favor, selecione um relógio de oração primeiro.',
+                icon: 'ℹ️'
+            });
+            return;
+        }
+
+        const select = document.getElementById('relogio-select');
+        const selectedOption = select ? select.options[select.selectedIndex] : null;
+        const clockTitle = selectedOption ? selectedOption.textContent : 'Relógio de Oração';
+
+        const confirmed = await showConfirmModal({
+            title: 'Excluir Todos os Motivos',
+            message: `Tem certeza que deseja excluir <strong>TODOS</strong> os motivos de oração do relógio <strong>${escapeHtml(clockTitle)}</strong>?<br><br><span style="color:#c0392b;">⚠️ Esta ação é permanente e removerá todos os motivos cadastrados deste relógio.</span>`,
+            confirmText: 'Sim, Excluir Todos',
+            confirmType: 'danger',
+            icon: '🗑️'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/api/relogios/${relogioId}/motivos-oracao`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'Erro ao excluir motivos de oração.');
+            }
+
+            await showAlertModal({
+                title: 'Sucesso',
+                message: result.message || 'Todos os motivos foram excluídos com sucesso!',
+                icon: '✅'
+            });
+
+            // Determine if editable based on date
+            let isEditable = false;
+            if (selectedOption && selectedOption.dataset.date) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const relogioDate = new Date(selectedOption.dataset.date);
+                const correctedRelogioDate = new Date(relogioDate.getTime() + relogioDate.getTimezoneOffset() * 60000);
+                correctedRelogioDate.setHours(0, 0, 0, 0);
+                isEditable = correctedRelogioDate >= today;
+            }
+
+            // Recarrega a tabela de motivos e as estatísticas
+            loadAdminMotivosOracao(relogioId, isEditable);
+            updateAdminRelogioStats(relogioId);
+
+            // Atualiza a listagem no modal caso esteja aberto
+            const viewAllModal = document.getElementById('modal-view-all-motivos');
+            if (viewAllModal && viewAllModal.classList.contains('is-visible')) {
+                await loadAndRenderAllMotivosInModal(relogioId);
+            }
+        } catch (error) {
+            console.error('Erro ao excluir todos os motivos de oração:', error);
+            await showAlertModal({
+                title: 'Erro',
+                message: error.message || 'Falha ao excluir todos os motivos.',
+                icon: '❌'
+            });
+        }
+    }
+
     // --- LÓGICA DO MODAL DE IMPORTAÇÃO DE MOTIVOS (.TXT) COM DISTRIBUIÇÃO ALEATÓRIA ---
     function initImportMotivosModal() {
         const modal = document.getElementById('modal-import-motivos');
@@ -2904,6 +3249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    initViewAllMotivosModal();
     initImportMotivosModal();
 
     const yearElement = document.getElementById('current-year');
